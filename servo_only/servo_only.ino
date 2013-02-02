@@ -19,6 +19,6 @@ void loop()
   delay(1000);
   myservo.write(180); // Set to other extreme.
   delay(1000);
-  myservo.write(90); // Set to 
+  myservo.write(90); // Set to variable servo.
   delay(1000);
 }
