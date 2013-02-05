@@ -25,9 +25,12 @@ http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Robotics/42BYGHM809.PDF
 #define motorSteps 200     // change this depending on the number of steps
                            // per revolution of your motor
 #define dir 0
-#define dutyCyc 50
+#define dutyCyc 2
 #define motorStep 7
 #define motorDir 8
+
+
+int duty;
 
 void setup() {
 
@@ -37,7 +40,7 @@ void setup() {
   // Set up the step and dir lines as digital outputs. Each pulse to step corresponds to one [micro]step of the stepper motor in the direction selected by the DIR pin.
   pinMode(motorStep, OUTPUT);
   pinMode(motorDir, OUTPUT);
-  int duty = dutyCyc/100*255;
+  duty = dutyCyc/100*255;
 }
 
 void loop() {
