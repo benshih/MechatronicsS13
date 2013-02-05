@@ -22,13 +22,14 @@ http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Robotics/42BYGHM809.PDF
 // define the pins that the motor is attached to. You can use
 // any digital I/O pins.
 
+// User selectable (input from hyperterminal gui).
 #define motorSteps 200     // change this depending on the number of steps
-                           // per revolution of your motor
+                          // per revolution of your motor
 #define dir 0
-#define dutyCyc 2
+#define dutyCyc 10
 #define motorStep 7
-#define motorDir 8
-
+#define motorDir 8a
+  
 
 int duty;
 
@@ -46,7 +47,12 @@ void setup() {
 void loop() {
   Serial.println(dir);
   digitalWrite(motorDir, dir);
-  
   analogWrite(motorStep, duty);
+  
+  delay(2000);
+
+  digitalWrite(motorDir, 100-dir);
+  analogWrite(motorStep, 50-duty);
+  
 }
 
