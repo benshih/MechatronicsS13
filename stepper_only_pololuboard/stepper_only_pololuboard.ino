@@ -23,15 +23,15 @@ http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Robotics/42BYGHM809.PDF
 // any digital I/O pins.
 
 // User selectable (input from hyperterminal gui).
-#define motorSteps 200     // change this depending on the number of steps
-                          // per revolution of your motor
+#define numDegrees 180 // In degrees.
+
 #define dir 0
 #define dutyCyc 10
 #define motorStep 7
-#define motorDir 8a
-  
+#define motorDir 8
 
-int duty;
+//int duty;
+int numSteps;
 
 void setup() {
 
@@ -41,18 +41,32 @@ void setup() {
   // Set up the step and dir lines as digital outputs. Each pulse to step corresponds to one [micro]step of the stepper motor in the direction selected by the DIR pin.
   pinMode(motorStep, OUTPUT);
   pinMode(motorDir, OUTPUT);
-  duty = dutyCyc/100*255;
+//  duty = dutyCyc/100*255;
+  numSteps = numDegrees / 1.8; // [degrees / (degrees/step)]
+  
 }
 
 void loop() {
   Serial.println(dir);
   digitalWrite(motorDir, dir);
-  analogWrite(motorStep, duty);
   
-  delay(2000);
+  for(int i = 0; i < numSteps; i++)
+  {
+    // Move the motor a single step with a duty cycle of 25%.
+    digitalWrite(motorStep, LOW);
+    Serial.println("motor rising edge");
+    delay(2);
+    
+    digitalWrite(motorStep, HIGH);
+    Serial.println("motor falling edge");
+    delay(2);
+    
+    Serial.println(i);
+    Serial.println();
+  }
 
-  digitalWrite(motorDir, 100-dir);
-  analogWrite(motorStep, 50-duty);
-  
+  digitalWrite(motorStep, HIGH);
+  Serial.println("pause\n");
+  delay(2000);
 }
 
