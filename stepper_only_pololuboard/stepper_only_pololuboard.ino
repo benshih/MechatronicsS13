@@ -24,9 +24,10 @@ http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Robotics/42BYGHM809.PDF
 
 // User selectable (input from hyperterminal gui).
 #define numDegrees 180 // In degrees.
+#define degPerStep 0.9
+#define pulsePer90 20
 
 #define dir 0
-#define dutyCyc 10
 #define motorStep 7
 #define motorDir 8
 
@@ -42,7 +43,7 @@ void setup() {
   pinMode(motorStep, OUTPUT);
   pinMode(motorDir, OUTPUT);
 //  duty = dutyCyc/100*255;
-  numSteps = numDegrees / 1.8; // [degrees / (degrees/step)]
+  numSteps = numDegrees * 5.75 / 10; // [degrees / (degrees/step)]
   
 }
 
@@ -54,18 +55,17 @@ void loop() {
   {
     // Move the motor a single step with a duty cycle of 25%.
     digitalWrite(motorStep, LOW);
-    Serial.println("motor rising edge");
+    //Serial.println("motor rising edge");
     delay(2);
     
     digitalWrite(motorStep, HIGH);
-    Serial.println("motor falling edge");
+    //Serial.println("motor falling edge");
     delay(2);
     
-    Serial.println(i);
-    Serial.println();
+    //Serial.println(i);
+    //Serial.println();
   }
 
-  digitalWrite(motorStep, HIGH);
   Serial.println("pause\n");
   delay(2000);
 }
