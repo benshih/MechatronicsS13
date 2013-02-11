@@ -1,40 +1,52 @@
-//Ram Muthiah
-//Hao Wang
-//Ben Shih
-//Mark Erazo
+/**
+ * @file TASK_4.ino
+ * @brief contains all sensor code
+ *
+ * @author Ram Muthiah (rmuthiah)
+ * @author Ben Shih (bshih1)
+ * @author Mark Erazo (merazo)
+ * @author Hao Wang (haow1)
+ */
 
+// Servo Control library
 #include <Servo.h> 
 
+// Defines DC Motor Off
 #define OFF 0
 
-//Definition for all Motor types
+// Definition for all Motor types
 #define SRV 0
 #define DCM 1
 #define STP 2
 
-#define SWT 11               //switch defining motor selection
+// Switch defining motor selection
+#define SWT 11               
 
+// Stepper Constants
 #define motorStep 7          // A4988 Stepper Motor Driver Carrier step pin
 #define motorDir 8           // A4988 Stepper Motor Driver Carrier direction pin
-#define DEGREES_PER_STEP 1.8
+#define STEP_PER_DEG 5.75/10
+int numSteps;                 // holder for number of microsteps required
+int numDegrees = 0;           // number of degrees to be moved by stepper specified by user
+int dir = 0;                  // Stepper Motor Driver Direction Reference
 
-#define encoderPin1 2
-#define encoderPin2 3
-#define dir_1 4
-#define dir_2 5
-#define enable 6
+// DC Motor Constants
+#define encoderPin1 2        // Encoder Pin A
+#define encoderPin2 3        // Encoder Pin B
+#define dir_1 4              // Motor Board L2
+#define dir_2 5              // Motor Board L1
+#define enable 6             // Motor Board Enable
+#define KP 1                 // Proportionality Constant for Control
+#define KI 0.04              // Integration Constant for Control 
 
-volatile long encoderValue = 0;
-volatile long cur_dir = 0;
-volatile long desired_loc = 0;
-volatile float error;
-volatile float motor_in;
-volatile float acc_err = 0;
-float KP = 1;
-float KI = 0.04;
+volatile long encoderValue = 0;  // Current Encoder Value from DCM
+volatile long desired_loc = 0;   // User Defined Desired location of DCM
+volatile float error;            // Difference between current location and user
+                                 // desired location of motor used for PID control
+volatile float acc_err = 0;      // Integration of Error over time used for PID control
 
 int readin;                   // Value holder for current input
-int cur_motor = SRV;          // Current Motor
+int cur_motor = SRV;          // Current Motor Reference
 
 int buttonState;              // the current reading from the input pin
 int lastButtonState = LOW;    // the previous reading from the input pin
@@ -44,43 +56,59 @@ int lastButtonState = LOW;    // the previous reading from the input pin
 long lastDebounceTime = 0;    // the last time the output pin was toggled
 long debounceDelay = 50;      // the debounce time; increase if the output flickers
 
-int numSteps;                 // holder for number of microsteps required
-int numDegrees = 0;         // number of degrees to be moved by stepper
-int dir = 0;                
-
+// Servo Constants
 Servo myservo;                // create servo object to control a servo 
                               // a maximum of eight servo objects can be created 
-int pos = 0;                 // variable to store the servo position 
+int pos = 0;                  // variable to store the servo position 
 
+/**
+ * @brief initializes Serial Communication, DCM, Stepper, and Servo constants
+ *
+ * @param void
+ * @return void
+ */
 void setup()
 {
-  pinMode(SWT, INPUT);        // Switch for motor control
-  pinMode(motorStep, OUTPUT); // Set up motor step pin as output on the A4988 Stepper Motor Driver Carrier.
-  pinMode(motorDir, OUTPUT);  // Set up motor direction pin as output on the A4988 Stepper Motor Driver Carrier.
-  Serial.begin(9600);         // Serial initialization
-  Serial.flush();             // Flush of serial buffer
+  // switch init
+  pinMode(SWT, INPUT);          // Switch for current motor selection
   
-  myservo.attach(9);          // attaches the servo on pin 9 to the servo object
+  // Serial init
+  Serial.begin(9600);           // Serial initialization
+  Serial.flush();               // Flush of serial buffer
   
-  digitalWrite(motorDir, LOW);
-  digitalWrite(motorStep, HIGH);
+  // Stepper init
+  pinMode(motorStep, OUTPUT);   // Set up motor step pin as output on the A4988 Stepper Motor Driver Carrier.
+  pinMode(motorDir, OUTPUT);    // Set up motor direction pin as output on the A4988 Stepper Motor Driver Carrier.
+  digitalWrite(motorDir, LOW);  // Initialize Stepper Directions
+  digitalWrite(motorStep, HIGH);// Turn off stepper (active low)
   
-  pinMode(encoderPin1, INPUT); 
+  // Servo Init
+  myservo.attach(9);            // attaches the servo on pin 9 to the servo object
+  
+  //DC Motor init
+  pinMode(encoderPin1, INPUT);  // init Encoders A and B 
   pinMode(encoderPin2, INPUT);
 
-  digitalWrite(encoderPin1, HIGH); //turn pullup resistor on
-  digitalWrite(encoderPin2, HIGH); //turn pullup resistor on
+  digitalWrite(encoderPin1, HIGH); // turn pullup resistor on
+  digitalWrite(encoderPin2, HIGH); // turn pullup resistor on
 
-  attachInterrupt(0, updateEncoder, CHANGE); 
+  attachInterrupt(0, updateEncoder, CHANGE);  // triggers update encoder on every Encoder A change
   
-  pinMode(dir_1, OUTPUT); 
-  pinMode(dir_2, OUTPUT);
-  pinMode(enable, OUTPUT);
-  analogWrite(enable,0);
-  digitalWrite(dir_1, LOW);
+  pinMode(dir_1, OUTPUT); // init L2
+  pinMode(dir_2, OUTPUT); // init L1
+  pinMode(enable, OUTPUT);// init enable
+  
+  analogWrite(enable,0);  // turn DC motor off
+  digitalWrite(dir_1, LOW); // Both Direction pins low means the motor has braked
   digitalWrite(dir_2, LOW);
 }
 
+/**
+ * @brief runs Serial Communication, DCM, Stepper, and Servo constants with switch debounce
+ *
+ * @param void
+ * @return void
+ */
 void loop() 
 {
   // read the state of the switch into a local variable:
@@ -126,6 +154,8 @@ void loop()
   {
     // parse the number and place under correct value
     readin = Serial.parseInt();
+    // if readin is leet this resets all the values to a clear slate
+    // and turns off all the motors
     if(readin == 1337)
     {
       digitalWrite(motorDir, LOW);
@@ -135,6 +165,9 @@ void loop()
       desired_loc = 0;
       numDegrees = 0;
     }
+    
+    // otherwise takes current input value and assigns it to variable holding
+    // user specified input for the currently selected motor
     else if(cur_motor == SRV)
     {
       pos = readin;
@@ -166,13 +199,16 @@ void loop()
     Serial.print(desired_loc);
     Serial.print(" ");
     Serial.print(error);
+    // threshold so that if error is within 5 degrees of desired location
+    // halt DC motor until desired location changes
     if(abs(error) < 5)
     {
       acc_err = 0;
       error = 0;
     }
-    acc_err = acc_err + error;
-    error = (KP * error) + (KI * acc_err);
+    acc_err = acc_err + error; //integrator for error term for PI Control
+    error = (KP * error) + (KI * acc_err); //PI control equation
+    // set direction of DC motor based on sign of PI output
     if(error > 0)
     {
       digitalWrite(dir_1, LOW);
@@ -186,22 +222,29 @@ void loop()
     }
     Serial.print(" ");
     Serial.println(error);
+    
+    // if dead on do nothing
     if(error == 0){}
+    // high threshold for PI output of 255
     else if(error > 255)
     {
       error = 255;
     }
+    // low threshold for PI output of 70
     else if(error < 70)
     {
       error = 70;
     }
     
+    // write PI output to PWM to enable pin
     analogWrite(enable,error);
   }
   // or it is a Stepper
   else
   {
-    numSteps = numDegrees * 5.75 / 10;
+    // calculate desired number of steps on stepper
+    numSteps = numDegrees * STEP_PER_DEG;
+    // reverse direction of stepper if direction is negative
     if(numSteps < 0)
     {
       numSteps = -numSteps;
@@ -212,8 +255,10 @@ void loop()
       dir = 0;
     }
     
+    // set direction of Stepper
     digitalWrite(motorDir, dir);
   
+    // write numSteps pulses to stepper to enable numDegrees motion
     for(int i = 0; i < numSteps; i++)
     {
       // Move the motor a single step with a duty cycle of 25%.
@@ -224,6 +269,7 @@ void loop()
       delay(2);
     }
     
+    // reset numDegrees so stepper does not continue motion
     numDegrees = 0;
   }
   
@@ -231,15 +277,24 @@ void loop()
   lastButtonState = reading;
 }
 
+/**
+ * @brief controls encoder count by detecting orientation of motor based on
+ *        A and B pin orientations
+ *
+ * @param void
+ * @return void
+ */
 void updateEncoder()
 {
-  int MSB = digitalRead(encoderPin1); //MSB = most significant bit
-  int LSB = digitalRead(encoderPin2); //LSB = least significant bit
+  int encA = digitalRead(encoderPin1); //MSB = most significant bit
+  int encB = digitalRead(encoderPin2); //LSB = least significant bit
 
-  if(MSB == LSB)
+  // CW direction
+  if(encA == encB)
   {
     encoderValue--;
   }
+  // CCW direction
   else
   {
     encoderValue++;
