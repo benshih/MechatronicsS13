@@ -94,8 +94,8 @@ void loop()
   // (i.e. the input went from LOW to HIGH),  and you've waited 
   // long enough since the last press to ignore any noise:  
   
-    Forceread = analogRead(ForceanalogPin);
-    Forceread = 1024 - Forceread;
+    Forceread = analogRead(ForceanalogPin);//read Force sensor
+    Forceread = 1024 - Forceread;//make it start from 1
     Serial.print("Current Force is ");
     Serial.println(Forceread);
     desired_loc = Forceread;
