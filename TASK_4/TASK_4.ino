@@ -185,6 +185,7 @@ void loop()
   // if current motor is servo
   if(cur_motor == SRV)
   {
+    pos = analogRead(IR_PIN) * SRV_SCALE;
     myservo.write(0); // Set to one extreme.
     delay(800);
     myservo.write(180); // Set to other extreme.
@@ -195,6 +196,7 @@ void loop()
   // if current motor is a DC motor
   else if(cur_motor == DCM)
   {
+    desired_loc = (((analogRead(A0) - 639) * -1 / 2) + 192) * 9 / 10;
     error = desired_loc - encoderValue;
     Serial.print(desired_loc);
     Serial.print(" ");
@@ -242,6 +244,8 @@ void loop()
   // or it is a Stepper
   else
   {
+    numDegrees = (analogRead(A5) * 3 / 4) - curDegrees;
+
     // calculate desired number of steps on stepper
     numSteps = numDegrees * STEP_PER_DEG;
     // reverse direction of stepper if direction is negative
