@@ -167,9 +167,19 @@ void loop()
       digitalWrite(motorDir, LOW);
       digitalWrite(motorStep, HIGH);
       analogWrite(enable,OFF);
+      
       pos = 0;
       desired_loc = 0;
       numDegrees = 0;
+      
+      Serial.println("Servo is controlled by IR Sensor and moves between 0 and 180 deg");
+      Serial.println("based on proximity of interfering object (0 if close, 180 otherwise)");
+      Serial.println();
+      Serial.println("DC Motor is controlled by pressure sensor");
+      Serial.println("Moves between 0 and 360 deg based on the amount of pressure applied");
+      Serial.println();
+      Serial.println("Stepper is controlled by potentiometer");
+      Serial.println("Based on turning moves between -9 deg and 9 deg per iteration");
     }
   }
   
@@ -185,9 +195,6 @@ void loop()
   {
     desired_loc = (((analogRead(A0) - 639) * -1 / 2) + 192) * 9 / 10;
     error = desired_loc - encoderValue;
-    Serial.print(desired_loc);
-    Serial.print(" ");
-    Serial.print(error);
     // threshold so that if error is within 5 degrees of desired location
     // halt DC motor until desired location changes
     if(abs(error) < 5)
@@ -209,8 +216,6 @@ void loop()
       digitalWrite(dir_2, LOW);
       error = -error;
     }
-    Serial.print(" ");
-    Serial.println(error);
     
     // if dead on do nothing
     if(error == 0){}
