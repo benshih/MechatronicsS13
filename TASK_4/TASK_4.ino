@@ -26,8 +26,10 @@
 #define motorStep 7          // A4988 Stepper Motor Driver Carrier step pin
 #define motorDir 8           // A4988 Stepper Motor Driver Carrier direction pin
 #define STEP_PER_DEG 5.75/10
+
 int numSteps;                 // holder for number of microsteps required
 int numDegrees = 0;           // number of degrees to be moved by stepper specified by user
+int curDegrees = 0;           // current position of stepper in degrees
 int dir = 0;                  // Stepper Motor Driver Direction Reference
 
 // DC Motor Constants
@@ -57,6 +59,10 @@ long lastDebounceTime = 0;    // the last time the output pin was toggled
 long debounceDelay = 50;      // the debounce time; increase if the output flickers
 
 // Servo Constants
+#define IR_PIN A1             // input from IR sensor
+#define SRV_SCALE 1.8         // Scaling Factor for IR values
+#define SERVO_DELAY 200        // ms delay for servo
+
 Servo myservo;                // create servo object to control a servo 
                               // a maximum of eight servo objects can be created 
 int pos = 0;                  // variable to store the servo position 
@@ -113,7 +119,7 @@ void loop()
 {
   // read the state of the switch into a local variable:
   int reading = digitalRead(SWT);
-  desired_loc = (desired_loc + analogRead(A5))/2;
+  
   // check to see if you just pressed the button 
   // (i.e. the input went from LOW to HIGH),  and you've waited 
   // long enough since the last press to ignore any noise:  
@@ -165,33 +171,14 @@ void loop()
       desired_loc = 0;
       numDegrees = 0;
     }
-    
-    // otherwise takes current input value and assigns it to variable holding
-    // user specified input for the currently selected motor
-    else if(cur_motor == SRV)
-    {
-      pos = readin;
-    }
-    else if (cur_motor == DCM)
-    {
-      desired_loc = readin;
-    }    
-    else
-    {
-      numDegrees = readin;
-    }
   }
   
   // if current motor is servo
   if(cur_motor == SRV)
   {
     pos = analogRead(IR_PIN) * SRV_SCALE;
-    myservo.write(0); // Set to one extreme.
-    delay(800);
-    myservo.write(180); // Set to other extreme.
-    delay(800);
     myservo.write(pos); // Set to variable servo.
-    delay(800);
+    delay(SERVO_DELAY);
   }
   // if current motor is a DC motor
   else if(cur_motor == DCM)
@@ -244,7 +231,8 @@ void loop()
   // or it is a Stepper
   else
   {
-    numDegrees = (analogRead(A5) * 3 / 4) - curDegrees;
+    analogWrite(enable, OFF);
+    numDegrees = (analogRead(A5) * 18 / 490) - 9;
 
     // calculate desired number of steps on stepper
     numSteps = numDegrees * STEP_PER_DEG;
@@ -272,9 +260,6 @@ void loop()
       digitalWrite(motorStep, HIGH);
       delay(2);
     }
-    
-    // reset numDegrees so stepper does not continue motion
-    numDegrees = 0;
   }
   
   // set last button read for debounce
