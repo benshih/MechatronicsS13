@@ -45,12 +45,11 @@ volatile long encoderValue = 0;  // Current Encoder Value from DCM
 volatile long desired_loc = 0;   // User Defined Desired location of DCM
 volatile float error;            // Difference between current location and user
                                  // desired location of motor used for PID control
-volatile float acc_err = 0;      // Integration of Error over time used for PID control
 
 // Servo Constants
 #define IR_PIN A1             // input from IR sensor
 #define SRV_SCALE 1.8         // Scaling Factor for IR values
-
+#define SERVODELAY 200        // ms delay for servo
 Servo myservo;                // create servo object to control a servo 
                               // a maximum of eight servo objects can be created 
 int pos = 0;                  // variable to store the servo position 
@@ -136,19 +135,17 @@ void loop()
   
   // Servo Control
   myservo.write(pos); // Set to variable servo.
-  delay(400);
+  delay(SERVODELAY);
     
   // DC motor control
   error = desired_loc - encoderValue;
   // threshold so that if error is within 5 degrees of desired location
   // halt DC motor until desired location changes
-  if(abs(error) < 5)
+  if(abs(error) < 10)
   {
-    acc_err = 0;
     error = 0;
   }
-  acc_err = acc_err + error; //integrator for error term for PI Control
-  error = (KP * error) + (KI * acc_err); //PI control equation
+  error = (KP * error); //PI control equation
   // set direction of DC motor based on sign of PI output
   if(error > 0)
   {
