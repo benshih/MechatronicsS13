@@ -195,6 +195,9 @@ void loop()
   {
     desired_loc = (((analogRead(A0) - 639) * -1 / 2) + 192) * 9 / 10;
     error = desired_loc - encoderValue;
+    Serial.print(desired_loc);
+    Serial.print(" ");
+    Serial.print(error);
     // threshold so that if error is within 5 degrees of desired location
     // halt DC motor until desired location changes
     if(abs(error) < 5)
@@ -215,7 +218,9 @@ void loop()
       digitalWrite(dir_1, HIGH);
       digitalWrite(dir_2, LOW);
       error = -error;
-    }
+    }    
+    Serial.print(" ");
+    Serial.println(error);    
     
     // if dead on do nothing
     if(error == 0){}
