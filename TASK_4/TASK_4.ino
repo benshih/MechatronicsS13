@@ -111,7 +111,6 @@ void setup()
  */
 void loop() 
 {
-<<<<<<< HEAD
   // read the state of the switch into a local variable:
   int reading = digitalRead(SWT);
   desired_loc = (desired_loc + analogRead(A5))/2;
@@ -149,13 +148,6 @@ void loop()
         Serial.println("Stepper. Input limited to -1000 to 1000");
     }
   }
-=======
-  numDegrees = (analogRead(A5) * 3 / 4) - curDegrees;
-  pos = analogRead(IR_PIN) * SRV_SCALE;
-  desired_loc = (((analogRead(A0) - 639) * -1 / 2) + 192) * 9 / 10;
-
-  Serial.println(numDegrees);
->>>>>>> derp
   
   // if serial is available, assume it is a number
   if(Serial.available())
@@ -201,20 +193,8 @@ void loop()
     myservo.write(pos); // Set to variable servo.
     delay(800);
   }
-<<<<<<< HEAD
   // if current motor is a DC motor
   else if(cur_motor == DCM)
-=======
-  
-  // write PI output to PWM to enable pin
-  analogWrite(enable,error);
-  
-  // Stepper Control  
-  // calculate desired number of steps on stepper
-  numSteps = numDegrees * STEP_PER_DEG;
-  // reverse direction of stepper if direction is negative
-  if(numSteps < 0)
->>>>>>> derp
   {
     desired_loc = (((analogRead(A0) - 639) * -1 / 2) + 192) * 9 / 10;
     error = desired_loc - encoderValue;
