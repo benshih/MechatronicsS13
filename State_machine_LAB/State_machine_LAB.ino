@@ -36,8 +36,8 @@ Servo servo_two;
 // Sensor Constants
 #define FRC_PIN A0             // input from Force sensor
 #define IR_PIN  A1             // input from IR sensor
-#define FRC_UNP 100            // TBD in Lab
-#define IR_MIN 100             // TBD in Lab
+#define FRC_UNP 1000           // Force Sensor Unpressed Value
+#define IR_MIN 100             // IR Sensor Cap Value for Position Reached
 
 // Current State of FSM
 int cur_state;
@@ -95,7 +95,7 @@ void loop()
       }
       
       // if IR Sensor detects "line" transition to drop state
-      if(analogRead(IR_PIN) >= IR_MIN)
+      if(analogRead(IR_PIN) < IR_MIN)
       {
         cur_state = DROP;
       }
@@ -113,7 +113,7 @@ void loop()
     case DROP:
       // if IR Reading has steadied itself, drop shingle
       // otherwise stay in DROP state until this occurs
-      if(analogRead(IR_PIN) < IR_MIN)
+      if(analogRead(IR_PIN) >= IR_MIN)
       {
         DCM_BRAKE();
         SHINGLE_DROP();
