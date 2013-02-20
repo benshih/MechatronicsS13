@@ -12,6 +12,7 @@
 #include <Servo.h> 
 #define SRV_ONE 9            // Servos for Dropper
 #define SRV_TWO 10
+#define SRV_DEL 400          // Delay for Servos to Stabilize
 Servo servo_one;             // create servo objects to control a servos
 Servo servo_two;
 
@@ -20,14 +21,14 @@ Servo servo_two;
 #define DIR_TWO 5            // Motor Board L1
 #define ENABLE 6             // Motor Board Enable
 #define OFF 0                // Defines DC Motor Off
-#define ON 128               // Defines DC Motor On
+#define ON 200               // Defines DC Motor On
 
 // Possible States on FSM
-#define START 0
-#define FOLLOW_ROW 1
-#define CHG_DIR 2
-#define DROP 3
-#define NEW_ROW 4
+#define START 1
+#define FOLLOW_ROW 2
+#define CHG_DIR 3
+#define DROP 4
+#define NEW_ROW 5
 
 // Switch Debounce
 #define SWT_PIN       11
@@ -36,8 +37,8 @@ Servo servo_two;
 // Sensor Constants
 #define FRC_PIN A0             // input from Force sensor
 #define IR_PIN  A1             // input from IR sensor
-#define FRC_UNP 1000           // Force Sensor Unpressed Value
-#define IR_MIN 100             // IR Sensor Cap Value for Position Reached
+#define FRC_UNP 700            // Force Sensor Unpressed Value
+#define IR_MIN 40              // IR Sensor Cap Value for Position Reached
 
 // Current State of FSM
 int cur_state;
@@ -64,6 +65,7 @@ void setup()
   cur_state = START;
   cur_row = ODD;
   shingle_count = 0;
+  Serial.println("The current state is START");
 }
 
 /**
@@ -74,9 +76,6 @@ void setup()
  */
 void loop() 
 {
-  Serial.print("The current state is :");
-  Serial.println(cur_state);
-  
   // the FSM in its entirety
   switch (cur_state) 
   {
@@ -91,6 +90,7 @@ void loop()
       {
         DCM_MOVE_REVERSE();
         cur_state = CHG_DIR;
+        Serial.println("The current state is CHG_DIR");
         break;
       }
       
@@ -98,6 +98,7 @@ void loop()
       if(analogRead(IR_PIN) < IR_MIN)
       {
         cur_state = DROP;
+        Serial.println("The current state is DROP");
       }
       break;
       
@@ -107,15 +108,16 @@ void loop()
       if(analogRead(FRC_PIN) >= FRC_UNP)
       {
         cur_state = FOLLOW_ROW;
+        Serial.println("The current state is FOLLOW_ROW");
       }
       break;
       
     case DROP:
+      DCM_BRAKE();
       // if IR Reading has steadied itself, drop shingle
       // otherwise stay in DROP state until this occurs
       if(analogRead(IR_PIN) >= IR_MIN)
       {
-        DCM_BRAKE();
         SHINGLE_DROP();
         CHECK_SHINGLE_COUNT();
       }
@@ -125,8 +127,9 @@ void loop()
       // Back up to beginning of next row
       DCM_MOVE_REVERSE();
       // Takes approx. 2 seconds (note this measure is complete BS)
-      delay(2000);
+      delay(3000);
       cur_state = FOLLOW_ROW;
+      Serial.println("The current state is FOLLOW_ROW");
       break;
       
     default: 
@@ -200,6 +203,7 @@ void SWITCH_DEBOUNCE()
     if(digitalRead(SWT_PIN) == HIGH)
     {
       cur_state = FOLLOW_ROW;
+      Serial.println("The current state is FOLLOW_ROW");
     }
   }
 }
@@ -252,10 +256,12 @@ void DCM_BRAKE()
 void SHINGLE_DROP()
 {
   shingle_count++;
-  // servo stuff
-  delay(400);
-  // more servo stuff
-  delay(400);
+  servo_one.write(90);
+  servo_two.write(90);
+  delay(SRV_DEL);
+  servo_one.write(0);
+  servo_two.write(0);
+  delay(SRV_DEL);
 }
 
 /**
@@ -270,6 +276,7 @@ void CHECK_SHINGLE_COUNT()
   if(shingle_count != cur_row)
   {
     cur_state = FOLLOW_ROW;
+    Serial.println("The current state is FOLLOW_ROW");
     return;
   }
   
@@ -287,4 +294,5 @@ void CHECK_SHINGLE_COUNT()
   
   // Start next row
   cur_state = NEW_ROW;
+  Serial.println("The current state is NEW_ROW");
 }
