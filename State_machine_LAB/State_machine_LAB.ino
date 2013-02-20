@@ -13,6 +13,8 @@
 #define SRV_ONE 9            // Servos for Dropper
 #define SRV_TWO 10
 #define SRV_DEL 400          // Delay for Servos to Stabilize
+#define SRV_ONE_INIT 0       // Init Positions for Servos
+#define SRV_TWO_INIT 180
 Servo servo_one;             // create servo objects to control a servos
 Servo servo_two;
 
@@ -52,7 +54,7 @@ int shingle_count;             // Shingle Count on Current Row
 int row_count;                 // Row Count on all
 
 /**
- * @brief initializes FSM constant, Serial Communication, DCM, and Servo constants
+ * @brief initializes FSM constants, Serial Communication, DCM, and Servo constants
  *
  * @param void
  * @return void
@@ -64,10 +66,11 @@ void setup()
   SERVO_INIT();
   DCM_INIT();
   
-  cur_state = START;
   cur_row = ODD;
   shingle_count = 0;
   row_count = 1;
+  
+  cur_state = START;
   Serial.println("The current state is START");
 }
 
@@ -84,8 +87,8 @@ void loop()
   {
     case START:
       //initial dropper
-      servo_one.write(0);
-      servo_two.write(180);
+      servo_one.write(SRV_ONE_INIT);
+      servo_two.write(SRV_TWO_INIT);
       SWITCH_DEBOUNCE();
       break;
       
@@ -105,7 +108,6 @@ void loop()
       {
         cur_state = DROP;     
       }
-      
       break;
       
     case CHG_DIR:
@@ -147,7 +149,7 @@ void loop()
     case END:
       // Prepare for power-cutoff
       DCM_BRAKE();
-      SWITCH_DEBOUNCE_EN();
+      SWITCH_DEBOUNCE_RST();
       break;
        
     default: 
@@ -226,7 +228,13 @@ void SWITCH_DEBOUNCE()
   }
 }
 
-void SWITCH_DEBOUNCE_EN()
+/**
+ * @brief Enacapsulates Switch Debounce Code to move into START state
+ *
+ * @param void
+ * @return void
+ */
+void SWITCH_DEBOUNCE_RST()
 {
   if(digitalRead(SWT_PIN) == LOW)
   {
