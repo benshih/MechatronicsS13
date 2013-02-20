@@ -331,8 +331,9 @@ void CHECK_SHINGLE_COUNT()
   
   //count the row, goto end if finish the last row
   row_count++;
-  if (row_count>=3)
+  if (row_count>=5)
   {
+    row_count = 1;
     cur_state = END;
     Serial.println("The current state is END.Thank you for using");
   };
