@@ -29,6 +29,7 @@ Servo servo_two;
 #define CHG_DIR 3
 #define DROP 4
 #define NEW_ROW 5
+#define END 6
 
 // Switch Debounce
 #define SWT_PIN       11
@@ -48,6 +49,7 @@ int cur_state;
 #define EVEN 4                 // Even Row Shingle Count
 int cur_row;                   // Odd or Even Row
 int shingle_count;             // Shingle Count on Current Row
+int row_count;                 // Row Count on all
 
 /**
  * @brief initializes FSM constant, Serial Communication, DCM, and Servo constants
@@ -65,6 +67,7 @@ void setup()
   cur_state = START;
   cur_row = ODD;
   shingle_count = 0;
+  row_count = 1;
   Serial.println("The current state is START");
 }
 
@@ -80,6 +83,9 @@ void loop()
   switch (cur_state) 
   {
     case START:
+      //initial dropper
+      servo_one.write(0);
+      servo_two.write(180);
       SWITCH_DEBOUNCE();
       break;
       
@@ -97,9 +103,9 @@ void loop()
       // if IR Sensor detects "line" transition to drop state
       if(analogRead(IR_PIN) < IR_MIN)
       {
-        cur_state = DROP;
-        Serial.println("The current state is DROP");
+        cur_state = DROP;     
       }
+      
       break;
       
     case CHG_DIR:
@@ -118,7 +124,13 @@ void loop()
       // otherwise stay in DROP state until this occurs
       if(analogRead(IR_PIN) >= IR_MIN)
       {
+        Serial.println("The current state is DROP");
         SHINGLE_DROP();
+        delay(100);
+        Serial.print(shingle_count);
+        Serial.print(" shingle placed in Row ");
+        Serial.println(row_count);
+        delay(500);
         CHECK_SHINGLE_COUNT();
       }
       break;
@@ -131,7 +143,13 @@ void loop()
       cur_state = FOLLOW_ROW;
       Serial.println("The current state is FOLLOW_ROW");
       break;
+    
+    case END:
+      // Prepare for power-cutoff
+      DCM_BRAKE();
       
+      break;
+       
     default: 
       break;
   }
@@ -260,7 +278,7 @@ void SHINGLE_DROP()
   servo_two.write(90);
   delay(SRV_DEL);
   servo_one.write(0);
-  servo_two.write(0);
+  servo_two.write(180);
   delay(SRV_DEL);
 }
 
@@ -294,5 +312,15 @@ void CHECK_SHINGLE_COUNT()
   
   // Start next row
   cur_state = NEW_ROW;
+  
   Serial.println("The current state is NEW_ROW");
+  
+  //count the row, goto end if finish the last row
+  row_count++;
+  if (row_count>=3)
+  {
+    cur_state = END;
+    Serial.println("The current state is END.Thank you for using");
+  };
+
 }
