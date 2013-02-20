@@ -147,7 +147,7 @@ void loop()
     case END:
       // Prepare for power-cutoff
       DCM_BRAKE();
-      
+      SWITCH_DEBOUNCE_EN();
       break;
        
     default: 
@@ -222,6 +222,20 @@ void SWITCH_DEBOUNCE()
     {
       cur_state = FOLLOW_ROW;
       Serial.println("The current state is FOLLOW_ROW");
+    }
+  }
+}
+
+void SWITCH_DEBOUNCE_EN()
+{
+  if(digitalRead(SWT_PIN) == LOW)
+  {
+    delay(DEBOUNCE_TIME);
+    if(digitalRead(SWT_PIN) == LOW)
+    {
+      cur_state = START;
+      Serial.println("Welcome");
+      Serial.println("The current state is START");
     }
   }
 }
