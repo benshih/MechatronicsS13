@@ -1,3 +1,6 @@
+// linreg.h and linreg.cpp can be found at
+// https://github.com/benshih/MechatronicsS13/tree/master/linreg
+
 #include <linreg.h>
 #include <CMUcam4.h>
 #include <CMUcom4.h>
@@ -68,7 +71,11 @@ void loop()
 void track_line()
 {
   LinearRegression lr;
+
+  // Contains Centroid coordinates and bounding box coordinates
   CMUcam4_tracking_data_t packetT;
+
+  // Contains 60 x 80 binary image that CMUCam currently sees
   CMUcam4_image_data_t packetF;
   int numPixels = 0;
   
