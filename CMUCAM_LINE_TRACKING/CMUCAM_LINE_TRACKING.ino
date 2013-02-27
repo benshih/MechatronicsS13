@@ -75,7 +75,7 @@ void track_line()
       {
         if(cam.getPixel(&packetF, y, x))
         {
-          lr.addXY(x, y);
+          lr.addXY(x - 80, 59 - y);
           numPixels++;
         }
       }
