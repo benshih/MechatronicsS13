@@ -23,6 +23,17 @@
 // Serial Rate
 #define BAUD_RATE 9600
 
+// DC Motor Constants
+#define M1_DIR_ONE 4            // Motor Board L2
+#define M1_DIR_TWO 5            // Motor Board L1
+#define M1_ENABLE 6             // Motor Board Enable
+#define M2_DIR_ONE 7            // Motor Constants for Motor 2
+#define M2_DIR_TWO 8
+#define M2_ENABLE 9
+#define OFF 0                   // Defines DC Motor Off
+#define RIGHT 1                 // Rotate Right
+#define LEFT 2                  // Rotate Left
+
 CMUcam4 cam(CMUCOM4_SERIAL1);
 int error;
 double est_err;
@@ -66,6 +77,7 @@ void setup()
 void loop()
 {
   track_line();
+  // Control Code Here
 }
 
 void track_line()
@@ -134,3 +146,78 @@ void track_line()
   }
 }
 
+
+/**
+ * @brief DC Motor Init
+ *
+ * @param void
+ * @return void
+ */
+void DCM_INIT()
+{
+  // Init for Motor 1
+  pinMode(M1_DIR_ONE, OUTPUT);   // init L2
+  pinMode(M1_DIR_TWO, OUTPUT);   // init L1
+  pinMode(M1_ENABLE, OUTPUT);    // init enable
+  
+  analogWrite(M1_ENABLE,OFF);    // turn DC motor off
+  digitalWrite(M1_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(M1_DIR_TWO, LOW);
+  
+  // Init for Motor 2
+  pinMode(M2_DIR_ONE, OUTPUT);   // init L2
+  pinMode(M2_DIR_TWO, OUTPUT);   // init L1
+  pinMode(M2_ENABLE, OUTPUT);    // init enable
+  
+  analogWrite(M2_ENABLE,OFF);    // turn DC motor off
+  digitalWrite(M2_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(M2_DIR_TWO, LOW);
+}
+
+/**
+ * @brief Stops DC Motors by braking
+ *
+ * @param void
+ * @return void
+ */
+void DCM_BRAKE()
+{
+  analogWrite(M1_ENABLE,0);      // turn DC motor off
+  digitalWrite(M1_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(M1_DIR_TWO, LOW);
+  
+  analogWrite(M2_ENABLE,0);      // turn DC motor off
+  digitalWrite(M2_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(M2_DIR_TWO, LOW);
+}
+
+/**
+ * @brief Makes DC Motors rotate dir at speed rpm
+ *
+ * @param desired_speed desired speed of rotation
+ * @param dir rotate right or left
+ * @return void
+ */
+void DCM_ROTATE(int desired_speed, int dir)
+{
+  if(dir == RIGHT)
+  {
+    digitalWrite(M1_DIR_ONE, LOW);
+    digitalWrite(M1_DIR_TWO, HIGH);
+    
+    digitalWrite(M2_DIR_ONE, HIGH);
+    digitalWrite(M2_DIR_TWO, LOW);
+  }
+  
+  else
+  {
+    digitalWrite(M1_DIR_ONE, HIGH);
+    digitalWrite(M1_DIR_TWO, LOW);
+    
+    digitalWrite(M2_DIR_ONE, LOW);
+    digitalWrite(M2_DIR_TWO, HIGH);
+  }
+  
+  analogWrite(M1_ENABLE, desired_speed);
+  analogWrite(M2_ENABLE, desired_speed);
+}
