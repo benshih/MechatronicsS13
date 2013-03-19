@@ -54,13 +54,13 @@ void loop()
   
   if(cur_angle > 2)
   {
-    DCM_ROTATE(70 + int(cur_angle), RIGHT);
+    DCM_ROTATE(70 + int(cur_angle), LEFT);
     Serial.println(70 + int(cur_angle));
   }
   
   else if(cur_angle < -2)
   {
-    DCM_ROTATE(70 - int(cur_angle), LEFT);
+    DCM_ROTATE(70 - int(cur_angle), RIGHT);
     Serial.println(-70 + int(cur_angle));
   }
   
