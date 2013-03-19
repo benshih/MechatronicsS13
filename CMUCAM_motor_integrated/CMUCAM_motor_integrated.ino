@@ -43,6 +43,44 @@ double A,B;
 void setup()
 {
   Serial.begin(BAUD_RATE);
+  CAMERA_INIT();
+  DCM_INIT();
+}
+
+void loop()
+{
+  track_line();
+  Serial.print("The current speed of the motor is ");
+  
+  if(cur_angle > 2)
+  {
+    DCM_ROTATE(70 + int(cur_angle), RIGHT);
+    Serial.println(70 + int(cur_angle));
+  }
+  
+  else if(cur_angle < -2)
+  {
+    DCM_ROTATE(70 - int(cur_angle), LEFT);
+    Serial.println(-70 + int(cur_angle));
+  }
+  
+  else
+  {
+    DCM_BRAKE();
+    Serial.println(0);
+  }
+  
+  Serial.println();
+}
+
+/**
+ * @brief Camera Init
+ *
+ * @param void
+ * @return void
+ */
+void CAMERA_INIT()
+{
   error = cam.begin();
 
   if(error < CMUCAM4_RETURN_SUCCESS)
@@ -74,12 +112,13 @@ void setup()
   cam.LEDOn(CMUCAM4_LED_ON);
 }
 
-void loop()
-{
-  track_line();
-  // Control Code Here
-}
-
+/**
+ * @brief Takes linear regrassion of current bitmap within thresholds set above
+ *        and sets angle determined by linear regression
+ *
+ * @param void
+ * @return void
+ */
 void track_line()
 {
   LinearRegression lr;
@@ -120,10 +159,6 @@ void track_line()
       B = lr.getB();
       est_err = lr.getStdErrorEst();
       cur_angle = atan2(B,1)*180/PI;
-      if(cur_angle < 0)
-      {
-        cur_angle = 180 + cur_angle;
-      }
       
       if(est_err > 12)
       {
@@ -182,11 +217,11 @@ void DCM_INIT()
  */
 void DCM_BRAKE()
 {
-  analogWrite(M1_ENABLE,0);      // turn DC motor off
+  analogWrite(M1_ENABLE,OFF);      // turn DC motor off
   digitalWrite(M1_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
   digitalWrite(M1_DIR_TWO, LOW);
   
-  analogWrite(M2_ENABLE,0);      // turn DC motor off
+  analogWrite(M2_ENABLE,OFF);      // turn DC motor off
   digitalWrite(M2_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
   digitalWrite(M2_DIR_TWO, LOW);
 }
