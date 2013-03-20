@@ -6,12 +6,12 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 230 //84
-#define RED_MAX 255 //114
-#define GREEN_MIN 230 //77
-#define GREEN_MAX 255 //94
-#define BLUE_MIN 230 //11
-#define BLUE_MAX 255 //35
+#define RED_MIN 110
+#define RED_MAX 196
+#define GREEN_MIN 40
+#define GREEN_MAX 75
+#define BLUE_MIN 0
+#define BLUE_MAX 48
 
 // Camera LED and Init Constants
 #define LED_BLINK 5 // Hz
@@ -54,14 +54,14 @@ void loop()
   
   if(cur_angle > 2)
   {
-    DCM_ROTATE(70 + int(cur_angle), LEFT);
-    Serial.println(70 + int(cur_angle));
+    DCM_ROTATE(50 + int(cur_angle), RIGHT);
+    Serial.println(50 + int(cur_angle));
   }
   
   else if(cur_angle < -2)
   {
-    DCM_ROTATE(70 - int(cur_angle), RIGHT);
-    Serial.println(-70 + int(cur_angle));
+    DCM_ROTATE(50 - int(cur_angle), LEFT);
+    Serial.println(-50 + int(cur_angle));
   }
   
   else
