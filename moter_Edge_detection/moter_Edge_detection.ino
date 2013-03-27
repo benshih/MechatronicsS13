@@ -19,10 +19,10 @@
 #define WAIT_TIME 5000 // 5 seconds
 
 //Edge Dection
-#define IR_edge0air 200
-#define IR_edge1air 270
-#define IR_edge0shingle 180
-#define IR_edge1shingle 260
+#define IR_edge0air 180
+#define IR_edge1air 300
+#define IR_edge0shingle 150
+#define IR_edge1shingle 290
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -40,6 +40,8 @@
 #define OFF 0                   // Defines DC Motor Off
 #define RIGHT 1                 // Rotate Right
 #define LEFT 2                  // Rotate Left
+#define FORWARD 1               // Move Forward
+#define BACK 2                  // Move Backward
 
 CMUcam4 cam(CMUCOM4_SERIAL1);
 int error;
@@ -56,7 +58,7 @@ int state;/*
 void setup()
 {
   Serial.begin(BAUD_RATE);
-  CAMERA_INIT();
+  //CAMERA_INIT();
   DCM_INIT();
 }
 
@@ -97,48 +99,21 @@ void loop()
     {
     case 0:
       //stop
-//      DCM_BRAKE();
+      DCM_BRAKE();
       Serial.println("stop");
       break;
     case 1:
       //moving
       Serial.println("moving");
+      DCM_MOVE(255,BACK);
       break;
     case 2:
       //switching line
       Serial.println("switching");
       break;
-//    case 3:
-//      //tracking line.
-//      state = 2;
-      break;
     default: 
       break;
   }
-    
-  
-  track_line();
-  Serial.print("The current speed of the motor is ");
-  
-  if(cur_angle > 2)
-  {
-    DCM_ROTATE(50 + int(cur_angle), RIGHT);
-    Serial.println(50 + int(cur_angle));
-  }
-  
-  else if(cur_angle < -2)
-  {
-    DCM_ROTATE(50 - int(cur_angle), LEFT);
-    Serial.println(-50 + int(cur_angle));
-  }
-  
-  else
-  {
-    DCM_BRAKE();
-    Serial.println(0);
-  }
-  
-  Serial.println();
 }
 
  
@@ -293,6 +268,37 @@ void DCM_BRAKE()
   analogWrite(M2_ENABLE,OFF);      // turn DC motor off
   digitalWrite(M2_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
   digitalWrite(M2_DIR_TWO, LOW);
+}
+
+/**
+ * @brief Makes DC Motors move dir at speed rpm
+ *
+ * @param desired_speed desired speed of rotation
+ * @param dir rotate right or left
+ * @return void
+ */
+void DCM_MOVE(int desired_speed, int dir)
+{
+  if(dir == FORWARD)
+  {
+    digitalWrite(M1_DIR_ONE, HIGH);
+    digitalWrite(M1_DIR_TWO, LOW);
+    
+    digitalWrite(M2_DIR_ONE, HIGH);
+    digitalWrite(M2_DIR_TWO, LOW);
+  }
+  
+  else
+  {
+    digitalWrite(M1_DIR_ONE, LOW);
+    digitalWrite(M1_DIR_TWO, HIGH);
+    
+    digitalWrite(M2_DIR_ONE, LOW);
+    digitalWrite(M2_DIR_TWO, HIGH);
+  }
+  
+  analogWrite(M1_ENABLE, desired_speed);
+  analogWrite(M2_ENABLE, desired_speed);
 }
 
 /**
