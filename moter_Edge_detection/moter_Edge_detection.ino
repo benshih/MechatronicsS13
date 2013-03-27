@@ -19,10 +19,10 @@
 #define WAIT_TIME 5000 // 5 seconds
 
 //Edge Dection
-#define IR_edge0air 
-#define IR_edge1air 
-#define IR_edge0shingle
-#define IR_edge1shingle
+#define IR_edge0air 200
+#define IR_edge1air 270
+#define IR_edge0shingle 180
+#define IR_edge1shingle 260
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -67,7 +67,7 @@ void loop()
     {
     case 0:
       //edge_sensor0_roof_out stop
-      state = 0
+      state = 0;
       break;
     case 1:
       //edge_sensor0_shingle
@@ -97,15 +97,16 @@ void loop()
     {
     case 0:
       //stop
-      DCM_BRAKE();
+//      DCM_BRAKE();
+      Serial.println("stop");
       break;
     case 1:
-      
-      state = 1;
+      //moving
+      Serial.println("moving");
       break;
     case 2:
       //switching line
-      
+      Serial.println("switching");
       break;
 //    case 3:
 //      //tracking line.
@@ -324,7 +325,6 @@ void DCM_ROTATE(int desired_speed, int dir)
   analogWrite(M1_ENABLE, desired_speed);
   analogWrite(M2_ENABLE, desired_speed);
 }
-
 /**
  * @brief Edge Detection
  * sensor0 is attached to Pin A0
@@ -333,8 +333,9 @@ void DCM_ROTATE(int desired_speed, int dir)
  * @return 0:roof_out,roof_in,shinge_det 
  *
  */
-int  EDGE_DET()
+int EDGE_DET()
 {
+  
   // read the input on analog pin 0:
   int sensorValue0 = analogRead(A0);
   // read the input on analog pin 1:
@@ -346,24 +347,26 @@ int  EDGE_DET()
   Serial.println(sensorValue1);
   delay(1);        // delay in between reads for stability
   //sensor0
-  if (sensorValue0 > IRedge0air) 
+  if (sensorValue0 > IR_edge0air) 
   {
     return 0; //if root_out return 0
   }
-  else if(sensorValue0 < IRedge0shingle)
+  else if(sensorValue0 < IR_edge0shingle)
   {
-    return 1;//if detect shingle return 1
+    sensorValue0 = 1;//if detect shingle return 1
   }
 //  else return 2;//if roof_in return 2
   
  //sensor1
-  if (sensorValue1 > IRedge1air) 
+  if (sensorValue1 > IR_edge1air) 
   {
     return 3; //if root_out return 3
   }
-  else if(sensorValue1 < IRedge1shingle)
+  else if(sensorValue1 < IR_edge1shingle)
   {
-    return 4;//if detect shingle return 4
+    sensorValue1 = 1;//if detect shingle return 4
   }
   //else if return 5;//if roof_in return 5
+  if (sensorValue0 = sensorValue1)
+  return 1;
 }
