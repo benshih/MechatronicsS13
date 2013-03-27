@@ -19,10 +19,10 @@
 #define WAIT_TIME 5000 // 5 seconds
 
 //Edge Dection
-#define IR_edge0air 180
-#define IR_edge1air 300
-#define IR_edge0shingle 150
-#define IR_edge1shingle 290
+#define IR_edge0air 190
+#define IR_edge1air 310
+#define IR_edge0shingle 170
+#define IR_edge1shingle 300
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -48,13 +48,19 @@ int error;
 double est_err;
 double cur_angle;
 double A,B;
-int state;/*
-0:stop
-1:moving
-2:swiching line
-3:retracking line
+int state;
 
+int sensorval0[10] = {0,0,0,0,0,0,0,0,0,0};
+int sensorval1[10] = {0,0,0,0,0,0,0,0,0,0};
+int cur_idx = 0;
+/*
+0:stop
+1:moving forward
+2:swiching line
+3:moving backward
 */
+int current_dir=0;
+
 void setup()
 {
   Serial.begin(BAUD_RATE);
@@ -74,22 +80,19 @@ void loop()
     case 1:
       //edge_sensor0_shingle
       //Serial.print("shingle detected");
-      state = 1;
+      if (current_dir==0)
+        state = 1;
+      else 
+        state = 3;
       break;
 //    case 2:
 //      //edge_sensor0_roof_in
 //      break;
     case 3:
       //edge_sensor1_roof_out switch line
-      state = 2;
+        state = 2;
+
       break;
-    case 4:
-      //edge_sensor1_shingle
-      state = 1;
-      break;
-//    case 5:
-//      //edge_sensor1_roof_in
-//      break;
     default: 
       break;
   }
@@ -104,13 +107,32 @@ void loop()
       break;
     case 1:
       //moving
-      Serial.println("moving");
+      Serial.println("moving backward");
       DCM_MOVE(255,BACK);
       break;
     case 2:
       //switching line
       Serial.println("switching");
+      for(int i = 0; i < 10; i++)
+      {
+        sensorval0[i] = 0;
+        sensorval1[i] = 0;
+      }
+      DCM_MOVE(255,FORWARD);
+      delay(800);
+      DCM_ROTATE(255,RIGHT);
+      delay(2000);
+      DCM_MOVE(255,FORWARD);
+      delay(5000);
+      DCM_ROTATE(255,LEFT);
+      delay(2000);
+      current_dir = 1;
       break;
+     case 3:
+     //backwards
+     Serial.println("moving forward");
+     DCM_MOVE(255,FORWARD);
+     break;
     default: 
       break;
   }
@@ -310,7 +332,7 @@ void DCM_MOVE(int desired_speed, int dir)
  */
 void DCM_ROTATE(int desired_speed, int dir)
 {
-  if(dir == RIGHT)
+  if(dir == LEFT)
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
@@ -341,18 +363,29 @@ void DCM_ROTATE(int desired_speed, int dir)
  */
 int EDGE_DET()
 {
-  
   // read the input on analog pin 0:
   int sensorValue0 = analogRead(A0);
   // read the input on analog pin 1:
   int sensorValue1 = analogRead(A1);
+  
+  sensorval0[cur_idx] = sensorValue0;
+  sensorval1[cur_idx] = sensorValue1;
+  cur_idx = (cur_idx + 1) % 10;
+  
+  sensorValue0 = sensorval0[0] + sensorval0[1] + sensorval0[2] + sensorval0[3] + sensorval0[4];
+  sensorValue0 = sensorValue0 + sensorval0[5] + sensorval0[6] + sensorval0[7] + sensorval0[8] + sensorval0[9];
+  sensorValue0 = sensorValue0 / 10;
+  
+  sensorValue1 = sensorval1[0] + sensorval1[1] + sensorval1[2] + sensorval1[3] + sensorval1[4];
+  sensorValue1 = sensorValue1 + sensorval1[5] + sensorval1[6] + sensorval1[7] + sensorval1[8] + sensorval1[9];
+  sensorValue1 = sensorValue1 / 10;
+  
   // print out the value you read:
   Serial.print("sensor 0 = " );                       
   Serial.print(sensorValue0);      
   Serial.print("\t sensor 1 = ");      
   Serial.println(sensorValue1);
-  delay(1);        // delay in between reads for stability
-  //sensor0
+  
   if (sensorValue0 > IR_edge0air) 
   {
     return 0; //if root_out return 0
@@ -372,7 +405,6 @@ int EDGE_DET()
   {
     sensorValue1 = 1;//if detect shingle return 4
   }
-  //else if return 5;//if roof_in return 5
-  if (sensorValue0 = sensorValue1)
+
   return 1;
 }
