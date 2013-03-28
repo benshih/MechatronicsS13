@@ -20,8 +20,8 @@
 
 //Edge Dection
 #define IR_edge0air 190
-#define IR_edge1air 310
-#define IR_edge0shingle 170
+#define IR_edge1air 100
+#define IR_edge0shingle 50
 #define IR_edge1shingle 300
 
 // Noise Parameter
