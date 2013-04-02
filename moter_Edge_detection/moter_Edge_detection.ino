@@ -19,10 +19,17 @@
 #define WAIT_TIME 5000 // 5 seconds
 
 //Edge Dection
+<<<<<<< HEAD
 #define IR_edge0air 190
 #define IR_edge1air 100
 #define IR_edge0shingle 50
 #define IR_edge1shingle 300
+=======
+#define IR_edge0air 500
+#define IR_edge1air 500
+#define IR_edge0shingle 500
+#define IR_edge1shingle 500
+>>>>>>> new IR sensor calibration
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -49,16 +56,17 @@ double est_err;
 double cur_angle;
 double A,B;
 int state;
-
-int sensorval0[10] = {0,0,0,0,0,0,0,0,0,0};
-int sensorval1[10] = {0,0,0,0,0,0,0,0,0,0};
-int cur_idx = 0;
 /*
 0:stop
 1:moving forward
 2:swiching line
 3:moving backward
 */
+
+int sensorval0[10] = {770,770,770,770,770,770,770,770,770,770};
+int sensorval1[10] = {770,770,770,770,770,770,770,770,770,770};
+int cur_idx = 0;
+
 int current_dir=0;
 
 void setup()
@@ -115,8 +123,8 @@ void loop()
       Serial.println("switching");
       for(int i = 0; i < 10; i++)
       {
-        sensorval0[i] = 0;
-        sensorval1[i] = 0;
+        sensorval0[i] = 770;
+        sensorval1[i] = 770;
       }
       DCM_MOVE(255,FORWARD);
       delay(800);
@@ -386,22 +394,22 @@ int EDGE_DET()
   Serial.print("\t sensor 1 = ");      
   Serial.println(sensorValue1);
   
-  if (sensorValue0 > IR_edge0air) 
+  if (sensorValue0 < IR_edge0air) 
   {
     return 0; //if root_out return 0
   }
-  else if(sensorValue0 < IR_edge0shingle)
+  else if(sensorValue0 > IR_edge0shingle)
   {
     sensorValue0 = 1;//if detect shingle return 1
   }
 //  else return 2;//if roof_in return 2
   
  //sensor1
-  if (sensorValue1 > IR_edge1air) 
+  if (sensorValue1 < IR_edge1air) 
   {
     return 3; //if root_out return 3
   }
-  else if(sensorValue1 < IR_edge1shingle)
+  else if(sensorValue1 > IR_edge1shingle)
   {
     sensorValue1 = 1;//if detect shingle return 4
   }
