@@ -6,12 +6,12 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 110
-#define RED_MAX 196
-#define GREEN_MIN 40
-#define GREEN_MAX 75
-#define BLUE_MIN 0
-#define BLUE_MAX 48
+#define RED_MIN 150
+#define RED_MAX 190
+#define GREEN_MIN 130
+#define GREEN_MAX 170
+#define BLUE_MIN 85
+#define BLUE_MAX 140
 
 // Camera LED and Init Constants
 #define LED_BLINK 5 // Hz
