@@ -3,6 +3,9 @@
  *
  *  @author Ram Muthiah (rmuthiah)
  *  @bug Line Lost Case is not accounted for
+ *       Must add servos and motors
+ *       Must add edge detection
+ *       Add Row Transition
  */
 
 // linreg.h and linreg.cpp can be found at
@@ -13,13 +16,14 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 150
-#define RED_MAX 190
-#define GREEN_MIN 130
-#define GREEN_MAX 170
-#define BLUE_MIN 85
-#define BLUE_MAX 140
-#define NUM_PIXELS_NOT_NOISE 100
+#define RED_MIN 120
+#define RED_MAX 200
+#define GREEN_MIN 100
+#define GREEN_MAX 180
+#define BLUE_MIN 60
+#define BLUE_MAX 150
+#define NUM_PIXELS_NOT_NOISE 50
+#define NO_IMAGE_FOUND 181
 
 // Camera LED and Init Constants
 #define LED_BLINK 5 // Hz
@@ -44,9 +48,10 @@
 #define FORWARD 1               // Move Forward
 #define BACK 2                  // Move Backward
 
-CMUcam4 cam(CMUCOM4_SERIAL1);
+CMUcam4 cam(CMUCOM4_SERIAL1);   // Serial Port CMUCam is attached to
 int error;                      // CMUCAM error detection on startup
-double cur_angle;
+double cur_angle;               // Current angle of tracked line, insignificant if
+                                // numPixels is 0
 int numPixels = -1;             // Number of pixels tracked in most recent bitmap
 double A,B;                     // A + Bx,slope and intercept of tracked line
                                 // insignificant if numPixels is 0
@@ -60,31 +65,37 @@ void setup()
 
 void loop()
 {
-  double cur_angle = track_line();
-  Serial.print("The current speed of the motor is ");
+  track_line();
   
-  if(cur_angle == 181)
+  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
   {
+    // FIND LINE FUNCTION SHOULD BE CALLED HERE
     DCM_BRAKE();
-    Serial.println(0);
+    Serial.print("numPixels is ");
+    Serial.print(numPixels);
+    Serial.print(" and cur_angle is ");
+    Serial.print(cur_angle);
   }
-  
-  if(cur_angle > 2)
-  {
-    DCM_ROTATE(50 + int(cur_angle), RIGHT);
-    Serial.println(50 + int(cur_angle));
-  }
-  
-  else if(cur_angle < -2)
-  {
-    DCM_ROTATE(50 - int(cur_angle), LEFT);
-    Serial.println(-50 + int(cur_angle));
-  }
-  
   else
   {
-    DCM_MOVE(255,BACK);
-    Serial.println(0);
+    Serial.print("The current speed of rotation is ");
+    if(cur_angle > 2)
+    {
+      DCM_ROTATE(50 + int(cur_angle), RIGHT);
+      Serial.println(50 + int(cur_angle));
+    }
+    
+    else if(cur_angle < -2)
+    {
+      DCM_ROTATE(50 - int(cur_angle), LEFT);
+      Serial.println(-50 + int(cur_angle));
+    }
+    
+    else
+    {
+      DCM_MOVE(255,BACK);
+      Serial.println(0);
+    }
   }
   
   Serial.println();
@@ -134,9 +145,9 @@ void CAMERA_INIT()
  *        and sets angle determined by linear regression
  *
  * @param void
- * @return angle of tracked line, or 18
+ * @return void
  */
-double track_line()
+void track_line()
 {
   LinearRegression lr;
   double est_err;
@@ -152,6 +163,7 @@ double track_line()
   cam.getTypeFDataPacket(&packetF); // Image Data
   
   numPixels = 0;
+  cur_angle = NO_IMAGE_FOUND;
   
   // Linear Regression
   if(packetT.pixels)
@@ -176,6 +188,7 @@ double track_line()
       est_err = lr.getStdErrorEst();
       cur_angle = atan2(B,1)*180/PI;
       
+      //CHECK THIS TO ENSURE CORRECTNESS
       if(est_err > 12)
       {
         cur_angle = 90;
@@ -189,14 +202,9 @@ double track_line()
       Serial.print("The angle of this line is ");
       Serial.println(cur_angle);
     }
+    
+    Serial.println();
   }
-  
-  Serial.println();
-  
-  if(numPixels == 0)
-    return 181;
-  else
-    return cur_angle;
 }
 
 
