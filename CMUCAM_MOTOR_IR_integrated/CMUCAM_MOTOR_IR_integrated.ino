@@ -1,3 +1,10 @@
+/** @file CMUCAM_MOTOR_IR_integrated.ino
+ *  @brief This file contains the line following and row transition code for the shingler
+ *
+ *  @author Ram Muthiah (rmuthiah)
+ *  @bug Line Lost Case is not accounted for
+ */
+
 // linreg.h and linreg.cpp can be found at
 // https://github.com/benshih/MechatronicsS13/tree/master/linreg
 
@@ -38,11 +45,11 @@
 #define BACK 2                  // Move Backward
 
 CMUcam4 cam(CMUCOM4_SERIAL1);
-int error;
-double est_err;
+int error;                      // CMUCAM error detection on startup
 double cur_angle;
-double A,B;
-int numPixels = 0;
+int numPixels = -1;             // Number of pixels tracked in most recent bitmap
+double A,B;                     // A + Bx,slope and intercept of tracked line
+                                // insignificant if numPixels is 0
 
 void setup()
 {
@@ -53,8 +60,14 @@ void setup()
 
 void loop()
 {
-  track_line();
+  double cur_angle = track_line();
   Serial.print("The current speed of the motor is ");
+  
+  if(cur_angle == 181)
+  {
+    DCM_BRAKE();
+    Serial.println(0);
+  }
   
   if(cur_angle > 2)
   {
@@ -70,7 +83,7 @@ void loop()
   
   else
   {
-    DCM_BRAKE();
+    DCM_MOVE(255,BACK);
     Serial.println(0);
   }
   
@@ -121,12 +134,13 @@ void CAMERA_INIT()
  *        and sets angle determined by linear regression
  *
  * @param void
- * @return void
+ * @return angle of tracked line, or 18
  */
-void track_line()
+double track_line()
 {
   LinearRegression lr;
-
+  double est_err;
+  
   // Contains Centroid coordinates and bounding box coordinates
   CMUcam4_tracking_data_t packetT;
 
@@ -154,10 +168,7 @@ void track_line()
         }
       }
     }
-    
-    Serial.print("Number of pixels tracked is ");
-    Serial.println(numPixels);
-    
+
     if(lr.haveData())
     {   
       A = lr.getA();
@@ -175,15 +186,17 @@ void track_line()
       Serial.print(B);
       Serial.println("x");
       
-      Serial.print("Margin of Error is ");
-      Serial.println(est_err);
-      
       Serial.print("The angle of this line is ");
       Serial.println(cur_angle);
     }
-    
-    Serial.println();
   }
+  
+  Serial.println();
+  
+  if(numPixels == 0)
+    return 181;
+  else
+    return cur_angle;
 }
 
 
