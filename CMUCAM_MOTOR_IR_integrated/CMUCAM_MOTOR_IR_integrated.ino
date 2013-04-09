@@ -56,6 +56,10 @@ int numPixels = -1;             // Number of pixels tracked in most recent bitma
 double A,B;                     // A + Bx,slope and intercept of tracked line
                                 // insignificant if numPixels is 0
 
+// Edge Detection Constants
+#define IR_edge0air 500
+#define IR_edge1air 500
+
 void setup()
 {
   Serial.begin(BAUD_RATE);
@@ -207,6 +211,21 @@ void track_line()
   }
 }
 
+/**
+ * @brief Edge Sensor Init
+ *
+ * @param void
+ * @return void
+ */
+void EDGE_INIT()
+{
+  // Init for Power for IR1 and IR2
+  pinMode(M1_DIR_ONE, OUTPUT);   // init L2
+  pinMode(M1_DIR_TWO, OUTPUT);   // init L1
+  
+  digitalWrite(M1_DIR_ONE, HIGH); // Both Direction pins low means the motor has braked
+  digitalWrite(M1_DIR_TWO, HIGH);
+}
 
 /**
  * @brief DC Motor Init
