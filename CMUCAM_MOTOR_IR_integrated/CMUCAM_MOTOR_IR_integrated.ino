@@ -4,7 +4,6 @@
  *  @author Ram Muthiah (rmuthiah)
  *  @bug Line Lost Case is not accounted for
  *       Must add servos and motors
- *       Must add edge detection
  *       Add Row Transition
  */
 
@@ -16,12 +15,12 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 120
-#define RED_MAX 200
-#define GREEN_MIN 100
-#define GREEN_MAX 180
-#define BLUE_MIN 60
-#define BLUE_MAX 150
+#define RED_MIN 130
+#define RED_MAX 210
+#define GREEN_MIN 110
+#define GREEN_MAX 190
+#define BLUE_MIN 70
+#define BLUE_MAX 160
 #define NUM_PIXELS_NOT_NOISE 50
 #define NO_IMAGE_FOUND 181
 
@@ -57,8 +56,10 @@ double A,B;                     // A + Bx,slope and intercept of tracked line
                                 // insignificant if numPixels is 0
 
 // Edge Detection Constants
-#define IR_edge0air 500
-#define IR_edge1air 500
+#define IR_edge0air 450         // Threshold for detection of edge with IR sensor
+#define IR_edge1air 450
+int IR0_EDGE = 0;               // Sensor Status with respect to the edge
+int IR1_EDGE = 0;
 
 void setup()
 {
@@ -69,40 +70,8 @@ void setup()
 
 void loop()
 {
-  track_line();
-  
-  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
-  {
-    // FIND LINE FUNCTION SHOULD BE CALLED HERE
-    DCM_BRAKE();
-    Serial.print("numPixels is ");
-    Serial.print(numPixels);
-    Serial.print(" and cur_angle is ");
-    Serial.print(cur_angle);
-  }
-  else
-  {
-    Serial.print("The current speed of rotation is ");
-    if(cur_angle > 2)
-    {
-      DCM_ROTATE(50 + int(cur_angle), RIGHT);
-      Serial.println(50 + int(cur_angle));
-    }
-    
-    else if(cur_angle < -2)
-    {
-      DCM_ROTATE(50 - int(cur_angle), LEFT);
-      Serial.println(-50 + int(cur_angle));
-    }
-    
-    else
-    {
-      DCM_MOVE(255,BACK);
-      Serial.println(0);
-    }
-  }
-  
-  Serial.println();
+  FOLLOW_LINE(BACK);
+  FOLLOW_LINE(FORWARD);
 }
 
 /**
@@ -331,4 +300,112 @@ void DCM_ROTATE(int desired_speed, int dir)
   
   analogWrite(M1_ENABLE, desired_speed);
   analogWrite(M2_ENABLE, desired_speed);
+}
+
+/**
+ * @brief Edge Detection
+ *        sensor0 is attached to Pin A0
+ *        sensor1 is attached to Pin A1
+ *        Sets status of edge variables
+ * @param void
+ * @return void
+ */
+void EDGE_DET()
+{
+  // read the input on analog pin 0 and 1 and save status
+  if(analogRead(A0) < IR_edge0air)
+  {
+    IR0_EDGE = 1;
+  }
+  else
+  {
+    IR0_EDGE = 0;
+  }
+  
+  if(analogRead(A1) < IR_edge1air)
+  {
+    IR1_EDGE = 1;
+  }
+  else
+  {
+    IR1_EDGE = 0;
+  }
+
+  Serial.print("sensor 0 = " );                       
+  Serial.print(IR0_EDGE);      
+  Serial.print("\t sensor 1 = ");      
+  Serial.println(IR1_EDGE);
+}
+
+/**
+ * @brief Follow Line in direction specified by input
+ *
+ * @param driection to move in along line
+ * @return void
+ */
+void FOLLOW_LINE(int dir)
+{
+  while(1)
+  {
+    EDGE_DET();
+    if(dir == FORWARD)
+    {
+      Serial.println("Going Forward");
+      if(IR0_EDGE)
+      {
+        DCM_BRAKE();
+        return;
+      }
+    }
+    else
+    {
+      Serial.println("Going Backward");
+      if(IR1_EDGE)
+      {
+        DCM_BRAKE();
+        return;
+      }
+    }
+    
+    track_line();
+    if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+    {
+      // FIND LINE FUNCTION SHOULD BE CALLED HERE
+      DCM_BRAKE();
+      Serial.print("numPixels is ");
+      Serial.print(numPixels);
+      Serial.print(" and cur_angle is ");
+      Serial.print(cur_angle);
+    }
+    else
+    {
+      Serial.print("The current speed of rotation is ");
+      if(cur_angle > 2)
+      {
+        DCM_ROTATE(70 + int(cur_angle), RIGHT);
+        Serial.println(70 + int(cur_angle));
+      }
+      
+      else if(cur_angle < -2)
+      {
+        DCM_ROTATE(70 - int(cur_angle), LEFT);
+        Serial.println(-70 + int(cur_angle));
+      }
+      
+      else
+      {
+        if(dir == FORWARD)
+        {
+          DCM_MOVE(255,FORWARD);
+        }
+        else
+        {
+          DCM_MOVE(255,BACK);
+        }
+        Serial.println(0);
+      }
+    }
+    
+    Serial.println();
+  }
 }

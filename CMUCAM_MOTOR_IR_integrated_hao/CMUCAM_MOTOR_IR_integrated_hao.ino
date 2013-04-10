@@ -57,12 +57,8 @@ double A,B;                     // A + Bx,slope and intercept of tracked line
                                 // insignificant if numPixels is 0
 
 // Edge Detection Constants
-#define IR_edge0air 500
-#define IR_edge1air 500
-//init for IR averaging 
-int sensorval0[10] = {770,770,770,770,770,770,770,770,770,770};
-int sensorval1[10] = {770,770,770,770,770,770,770,770,770,770};
-int cur_idx = 0;                //curent operated IR sensorvalX[]
+#define IR_edge0air 450
+#define IR_edge1air 450
 
 void setup()
 {
@@ -355,20 +351,7 @@ int EDGE_DET()
   int sensorValue0 = analogRead(A0);
   // read the input on analog pin 1:
   int sensorValue1 = analogRead(A1);
-  
-  //Do averge on 10 :
-  sensorval0[cur_idx] = sensorValue0;
-  sensorval1[cur_idx] = sensorValue1;
-  cur_idx = (cur_idx + 1) % 10;
-  
-  sensorValue0 = sensorval0[0] + sensorval0[1] + sensorval0[2] + sensorval0[3] + sensorval0[4];
-  sensorValue0 = sensorValue0 + sensorval0[5] + sensorval0[6] + sensorval0[7] + sensorval0[8] + sensorval0[9];
-  sensorValue0 = sensorValue0 / 10;
-  
-  sensorValue1 = sensorval1[0] + sensorval1[1] + sensorval1[2] + sensorval1[3] + sensorval1[4];
-  sensorValue1 = sensorValue1 + sensorval1[5] + sensorval1[6] + sensorval1[7] + sensorval1[8] + sensorval1[9];
-  sensorValue1 = sensorValue1 / 10;
-  
+
   // print out the value it read after averaging
   Serial.print("sensor 0 = " );                       
   Serial.print(sensorValue0);      
