@@ -265,7 +265,7 @@ void DCM_MOVE(int desired_speed, int dir)
  */
 void DCM_ROTATE(int desired_speed, int dir)
 {
-  if(dir == RIGHT)
+  if(dir == LEFT)
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
@@ -312,13 +312,13 @@ void STRAIGHTEN()
       Serial.print("The current speed of rotation is ");
       if(cur_angle > 2)
       {
-        DCM_ROTATE(60 + int(cur_angle), RIGHT);
+        DCM_ROTATE(60 + int(cur_angle), LEFT);
         Serial.println(60 + int(cur_angle));
       }
       
       else if(cur_angle < -2)
       {
-        DCM_ROTATE(60 - int(cur_angle), LEFT);
+        DCM_ROTATE(60 - int(cur_angle), RIGHT);
         Serial.println(-60 + int(cur_angle));
       }
       
@@ -418,12 +418,10 @@ void FOLLOW_LINE(int dir)
  */
 void ROW_TRANSITION()
 {
-  DCM_MOVE(255,FORWARD);
-  delay(800);
   DCM_ROTATE(255,RIGHT);
-  delay(2000);
+  delay(1000);
   DCM_MOVE(255,FORWARD);
-  
+  delay(1000);
   while(1)
   {
     track_line();
