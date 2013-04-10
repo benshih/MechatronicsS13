@@ -15,12 +15,12 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 130
-#define RED_MAX 210
-#define GREEN_MIN 110
-#define GREEN_MAX 190
-#define BLUE_MIN 70
-#define BLUE_MAX 160
+#define RED_MIN 110
+#define RED_MAX 220
+#define GREEN_MIN 90
+#define GREEN_MAX 200
+#define BLUE_MIN 50
+#define BLUE_MAX 170
 #define NUM_PIXELS_NOT_NOISE 50
 #define NO_IMAGE_FOUND 181
 
@@ -421,13 +421,13 @@ void ROW_TRANSITION()
   DCM_ROTATE(255,RIGHT);
   delay(1000);
   DCM_MOVE(255,FORWARD);
-  delay(1000);
+  delay(1500);
   while(1)
   {
     track_line();
     if(numPixels > NUM_PIXELS_NOT_NOISE)
     {
-      if(A > 15 && A < 35)
+      if(A > 15 && A < 75)
       {
         STRAIGHTEN();
         return;
