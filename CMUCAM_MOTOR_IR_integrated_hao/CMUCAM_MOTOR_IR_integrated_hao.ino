@@ -1,27 +1,33 @@
+/** @file CMUCAM_MOTOR_IR_integrated.ino
+ *  @brief This file contains the line following and row transition code for the shingler
+ *
+ *  @author Ram Muthiah (rmuthiah)
+ *  @bug Line Lost Case is not accounted for
+ *       Must add servos and motors
+ *       Must add edge detection
+ *       Add Row Transition
+ */
+
 // linreg.h and linreg.cpp can be found at
 // https://github.com/benshih/MechatronicsS13/tree/master/linreg
 
 #include <linreg.h>
 #include <CMUcam4.h>
 #include <CMUcom4.h>
-//state mechine
 
 // Camera Tracking Parameters
-#define RED_MIN 110
-#define RED_MAX 196
-#define GREEN_MIN 40
-#define GREEN_MAX 75
-#define BLUE_MIN 0
-#define BLUE_MAX 48
+#define RED_MIN 120
+#define RED_MAX 200
+#define GREEN_MIN 100
+#define GREEN_MAX 180
+#define BLUE_MIN 60
+#define BLUE_MAX 150
+#define NUM_PIXELS_NOT_NOISE 50
+#define NO_IMAGE_FOUND 181
 
 // Camera LED and Init Constants
 #define LED_BLINK 5 // Hz
 #define WAIT_TIME 5000 // 5 seconds
-
-//Edge Dection
-
-#define IR_edge0air 500
-#define IR_edge1air 500
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -42,103 +48,63 @@
 #define FORWARD 1               // Move Forward
 #define BACK 2                  // Move Backward
 
-CMUcam4 cam(CMUCOM4_SERIAL1);
-int error;
-double est_err;
-double cur_angle;
-double A,B;
-int state;
-/*
-0:stop
-1:moving forward
-2:swiching line
-3:moving backward
-*/
+CMUcam4 cam(CMUCOM4_SERIAL1);   // Serial Port CMUCam is attached to
+int error;                      // CMUCAM error detection on startup
+double cur_angle;               // Current angle of tracked line, insignificant if
+                                // numPixels is 0
+int numPixels = -1;             // Number of pixels tracked in most recent bitmap
+double A,B;                     // A + Bx,slope and intercept of tracked line
+                                // insignificant if numPixels is 0
 
-int sensorval0[10] = {770,770,770,770,770,770,770,770,770,770};
-int sensorval1[10] = {770,770,770,770,770,770,770,770,770,770};
-int cur_idx = 0;
-
-int current_dir=0;
+// Edge Detection Constants
+#define IR_edge0air 500
+#define IR_edge1air 500
 
 void setup()
 {
   Serial.begin(BAUD_RATE);
-  //CAMERA_INIT();
+  CAMERA_INIT();
   DCM_INIT();
 }
 
 void loop()
 {
-  //edge detection
-    switch (EDGE_DET())//0:left_roofout, 2:right_roofout, 1:both_roofon 
+  track_line();
+  
+  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+  {
+    // FIND LINE FUNCTION SHOULD BE CALLED HERE
+    DCM_BRAKE();
+    Serial.print("numPixels is ");
+    Serial.print(numPixels);
+    Serial.print(" and cur_angle is ");
+    Serial.print(cur_angle);
+  }
+  else
+  {
+    Serial.print("The current speed of rotation is ");
+    if(cur_angle > 2)
     {
-    case 0:
-      //edge_sensor0_roof_out stop
-      state = 0;
-      break;
-    case 1:
-      //edge_sensor0_shingle
-      //Serial.print("shingle detected");
-      if (current_dir==0)
-        state = 1;
-      else 
-        state = 3;
-      break;
-//    case 2:
-//      //edge_sensor0_roof_in
-//      break;
-    case 2:
-      //edge_sensor1_roof_out switch line
-        state = 2;
-
-      break;
-    default: 
-      break;
+      DCM_ROTATE(50 + int(cur_angle), RIGHT);
+      Serial.println(50 + int(cur_angle));
+    }
+    
+    else if(cur_angle < -2)
+    {
+      DCM_ROTATE(50 - int(cur_angle), LEFT);
+      Serial.println(-50 + int(cur_angle));
+    }
+    
+    else
+    {
+      DCM_MOVE(255,BACK);
+      Serial.println(0);
+    }
   }
   
-  //state 
-  switch (state) 
-    {
-    case 0:
-      //stop
-      DCM_BRAKE();
-      Serial.println("stop");
-      break;
-    case 1:
-      //moving
-      Serial.println("moving backward");
-      DCM_MOVE(255,BACK);
-      break;
-    case 2:
-      //switching line
-      Serial.println("switching");
-      for(int i = 0; i < 10; i++)
-      {
-        sensorval0[i] = 770;
-        sensorval1[i] = 770;
-      }
-      DCM_MOVE(255,FORWARD);
-      delay(800);
-      DCM_ROTATE(255,RIGHT);
-      delay(2000);
-      DCM_MOVE(255,FORWARD);
-      delay(5000);
-      DCM_ROTATE(255,LEFT);
-      delay(2000);
-      current_dir = 1;
-      break;
-     case 3:
-     //backwards
-     Serial.println("moving forward");
-     DCM_MOVE(255,FORWARD);
-     break;
-    default: 
-      break;
-  }
+  Serial.println();
 }
 
- 
 /**
  * @brief Camera Init
  *
@@ -188,17 +154,20 @@ void CAMERA_INIT()
 void track_line()
 {
   LinearRegression lr;
-
+  double est_err;
+  
   // Contains Centroid coordinates and bounding box coordinates
   CMUcam4_tracking_data_t packetT;
 
   // Contains 60 x 80 binary image that CMUCam currently sees
   CMUcam4_image_data_t packetF;
-  int numPixels = 0;
   
   cam.trackColor(); // Initialize color parameters
   cam.getTypeTDataPacket(&packetT); // Tracking Data
   cam.getTypeFDataPacket(&packetF); // Image Data
+  
+  numPixels = 0;
+  cur_angle = NO_IMAGE_FOUND;
   
   // Linear Regression
   if(packetT.pixels)
@@ -215,10 +184,7 @@ void track_line()
         }
       }
     }
-    
-    Serial.print("Number of pixels tracked is ");
-    Serial.println(numPixels);
-    
+
     if(lr.haveData())
     {   
       A = lr.getA();
@@ -226,6 +192,7 @@ void track_line()
       est_err = lr.getStdErrorEst();
       cur_angle = atan2(B,1)*180/PI;
       
+      //CHECK THIS TO ENSURE CORRECTNESS
       if(est_err > 12)
       {
         cur_angle = 90;
@@ -236,9 +203,6 @@ void track_line()
       Serial.print(B);
       Serial.println("x");
       
-      Serial.print("Margin of Error is ");
-      Serial.println(est_err);
-      
       Serial.print("The angle of this line is ");
       Serial.println(cur_angle);
     }
@@ -247,6 +211,21 @@ void track_line()
   }
 }
 
+/**
+ * @brief Edge Sensor Init
+ *
+ * @param void
+ * @return void
+ */
+void EDGE_INIT()
+{
+  // Init for Power for IR1 and IR2
+  pinMode(M1_DIR_ONE, OUTPUT);   // init L2
+  pinMode(M1_DIR_TWO, OUTPUT);   // init L1
+  
+  digitalWrite(M1_DIR_ONE, HIGH); // Both Direction pins low means the motor has braked
+  digitalWrite(M1_DIR_TWO, HIGH);
+}
 
 /**
  * @brief DC Motor Init
@@ -332,7 +311,7 @@ void DCM_MOVE(int desired_speed, int dir)
  */
 void DCM_ROTATE(int desired_speed, int dir)
 {
-  if(dir == LEFT)
+  if(dir == RIGHT)
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
@@ -352,51 +331,4 @@ void DCM_ROTATE(int desired_speed, int dir)
   
   analogWrite(M1_ENABLE, desired_speed);
   analogWrite(M2_ENABLE, desired_speed);
-}
-/**
- * @brief Edge Detection
- * sensor0 is attached to Pin A0
- * sensor1 is attached to Pin A1
- * @param void
- * @return 0:roof_out,roof_in,shinge_det 
- *
- */
-int EDGE_DET()
-{
-  // read the input on analog pin 0:
-  int sensorValue0 = analogRead(A0);
-  // read the input on analog pin 1:
-  int sensorValue1 = analogRead(A1);
-  
-  sensorval0[cur_idx] = sensorValue0;
-  sensorval1[cur_idx] = sensorValue1;
-  cur_idx = (cur_idx + 1) % 10;
-  
-  sensorValue0 = sensorval0[0] + sensorval0[1] + sensorval0[2] + sensorval0[3] + sensorval0[4];
-  sensorValue0 = sensorValue0 + sensorval0[5] + sensorval0[6] + sensorval0[7] + sensorval0[8] + sensorval0[9];
-  sensorValue0 = sensorValue0 / 10;
-  
-  sensorValue1 = sensorval1[0] + sensorval1[1] + sensorval1[2] + sensorval1[3] + sensorval1[4];
-  sensorValue1 = sensorValue1 + sensorval1[5] + sensorval1[6] + sensorval1[7] + sensorval1[8] + sensorval1[9];
-  sensorValue1 = sensorValue1 / 10;
-  
-  // print out the value you read:
-  Serial.print("sensor 0 = " );                       
-  Serial.print(sensorValue0);      
-  Serial.print("\t sensor 1 = ");      
-  Serial.println(sensorValue1);
-
-//sensor0(left)  
-  if (sensorValue0 < IR_edge0air) 
-  {
-    return 0; //if left_roofout return 0
-  }
-  
- //sensor1(right)
-  if (sensorValue1 < IR_edge1air) 
-  {
-    return 2; //if right_rootout return 2
-  }
-
-  return 1;//both roofon return 1
 }
