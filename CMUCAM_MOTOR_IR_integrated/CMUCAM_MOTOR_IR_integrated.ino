@@ -2,9 +2,12 @@
  *  @brief This file contains the line following and row transition code for the shingler
  *
  *  @author Ram Muthiah (rmuthiah)
+ *          Hao Wang (haow1)
+ *
  *  @bug Line Lost Case is not accounted for
  *       Must add servos and motors
- *       Add Row Transition
+ *       Remove Magic Numbers
+ *       Translational Error Correcting
  */
 
 // linreg.h and linreg.cpp can be found at
