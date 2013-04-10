@@ -71,6 +71,7 @@ void setup()
 void loop()
 {
   FOLLOW_LINE(BACK);
+  ROW_TRANSITION();
   FOLLOW_LINE(FORWARD);
 }
 
@@ -181,22 +182,6 @@ void track_line()
 }
 
 /**
- * @brief Edge Sensor Init
- *
- * @param void
- * @return void
- */
-void EDGE_INIT()
-{
-  // Init for Power for IR1 and IR2
-  pinMode(M1_DIR_ONE, OUTPUT);   // init L2
-  pinMode(M1_DIR_TWO, OUTPUT);   // init L1
-  
-  digitalWrite(M1_DIR_ONE, HIGH); // Both Direction pins low means the motor has braked
-  digitalWrite(M1_DIR_TWO, HIGH);
-}
-
-/**
  * @brief DC Motor Init
  *
  * @param void
@@ -303,10 +288,54 @@ void DCM_ROTATE(int desired_speed, int dir)
 }
 
 /**
+ * @brief Straightens robot to line
+ *
+ * @param void
+ * @return void
+ */
+void STRAIGHTEN()
+{
+  while(1)
+  {
+    track_line();
+    if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+    {
+      // FIND LINE FUNCTION SHOULD BE CALLED HERE
+      DCM_BRAKE();
+      Serial.print("numPixels is ");
+      Serial.print(numPixels);
+      Serial.print(" and cur_angle is ");
+      Serial.print(cur_angle);
+    }
+    else
+    {
+      Serial.print("The current speed of rotation is ");
+      if(cur_angle > 2)
+      {
+        DCM_ROTATE(60 + int(cur_angle), RIGHT);
+        Serial.println(60 + int(cur_angle));
+      }
+      
+      else if(cur_angle < -2)
+      {
+        DCM_ROTATE(60 - int(cur_angle), LEFT);
+        Serial.println(-60 + int(cur_angle));
+      }
+      
+      else
+      {
+        return;
+      }
+    }
+  }
+}
+
+/**
  * @brief Edge Detection
  *        sensor0 is attached to Pin A0
  *        sensor1 is attached to Pin A1
  *        Sets status of edge variables
+ *
  * @param void
  * @return void
  */
@@ -367,45 +396,44 @@ void FOLLOW_LINE(int dir)
       }
     }
     
-    track_line();
-    if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+    STRAIGHTEN();
+    
+    if(dir == FORWARD)
     {
-      // FIND LINE FUNCTION SHOULD BE CALLED HERE
-      DCM_BRAKE();
-      Serial.print("numPixels is ");
-      Serial.print(numPixels);
-      Serial.print(" and cur_angle is ");
-      Serial.print(cur_angle);
+      DCM_MOVE(255,FORWARD);
     }
     else
     {
-      Serial.print("The current speed of rotation is ");
-      if(cur_angle > 2)
+      DCM_MOVE(255,BACK);
+    }
+  }
+}
+
+/**
+ * @brief Move up row from one edge
+ *        Initial assumption that robot is stopped
+ *
+ * @param original direction of movement
+ * @return void
+ */
+void ROW_TRANSITION()
+{
+  DCM_MOVE(255,FORWARD);
+  delay(800);
+  DCM_ROTATE(255,RIGHT);
+  delay(2000);
+  DCM_MOVE(255,FORWARD);
+  
+  while(1)
+  {
+    track_line();
+    if(numPixels > NUM_PIXELS_NOT_NOISE)
+    {
+      if(A > 15 && A < 35)
       {
-        DCM_ROTATE(70 + int(cur_angle), RIGHT);
-        Serial.println(70 + int(cur_angle));
-      }
-      
-      else if(cur_angle < -2)
-      {
-        DCM_ROTATE(70 - int(cur_angle), LEFT);
-        Serial.println(-70 + int(cur_angle));
-      }
-      
-      else
-      {
-        if(dir == FORWARD)
-        {
-          DCM_MOVE(255,FORWARD);
-        }
-        else
-        {
-          DCM_MOVE(255,BACK);
-        }
-        Serial.println(0);
+        STRAIGHTEN();
+        return;
       }
     }
-    
-    Serial.println();
   }
 }
