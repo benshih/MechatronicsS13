@@ -29,9 +29,9 @@ void setup()
 void loop() 
 { 
   myservo.write(0);
-  delay(400);
-  myservo.write(90);
-  delay(400); 
+  delay(1000);
+  myservo.write(180);
+  delay(1000); 
   DCM_MOVE(255,FORWARD);
 } 
 
@@ -91,18 +91,13 @@ void DCM_MOVE(int desired_speed, int dir)
   {
     digitalWrite(M1_DIR_ONE, HIGH);
     digitalWrite(M1_DIR_TWO, LOW);
-    
-    digitalWrite(M2_DIR_ONE, HIGH);
-    digitalWrite(M2_DIR_TWO, LOW);
+
   }
   
   else
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
-    
-    digitalWrite(M2_DIR_ONE, LOW);
-    digitalWrite(M2_DIR_TWO, HIGH);
   }
   
   analogWrite(M1_ENABLE, desired_speed);
