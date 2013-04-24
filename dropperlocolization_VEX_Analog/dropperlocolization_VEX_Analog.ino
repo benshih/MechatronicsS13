@@ -116,7 +116,7 @@ void DP_pos(int pos)
   break;
   
   case MID:
-  if (sensorValueM>100)
+  if (sensorValueM<10)
     {
       DPCHAIN_BRAKE();
       return;
