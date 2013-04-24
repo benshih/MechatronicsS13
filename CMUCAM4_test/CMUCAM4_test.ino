@@ -1,7 +1,7 @@
 #include <CMUcam4.h>
 #include <CMUcom4.h>
 
-#define TEST_PORT CMUCOM4_SERIAL3
+#define TEST_PORT CMUCOM4_SERIAL1
 
 #define TEST_BAUD 19200 // Startup baud rate.
 #define TEST_WAIT 5000 // Startup wait time in milliseconds.

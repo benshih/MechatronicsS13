@@ -18,14 +18,16 @@
 #include <CMUcom4.h>
 
 // Camera Tracking Parameters
-#define RED_MIN 110
-#define RED_MAX 220
-#define GREEN_MIN 90
-#define GREEN_MAX 200
-#define BLUE_MIN 50
-#define BLUE_MAX 170
-#define NUM_PIXELS_NOT_NOISE 50
+#define RED_MIN 170
+#define RED_MAX 225
+#define GREEN_MIN 140
+#define GREEN_MAX 195
+#define BLUE_MIN 105
+#define BLUE_MAX 180
+#define NUM_PIXELS_NOT_NOISE 25
 #define NO_IMAGE_FOUND 181
+#define LOWER_CENTER 28         // Limits of A in A + Bx
+#define UPPER_CENTER 33
 
 // Camera LED and Init Constants
 #define LED_BLINK 5 // Hz
@@ -45,6 +47,8 @@
 #define M2_DIR_TWO 8
 #define M2_ENABLE 9
 #define OFF 0                   // Defines DC Motor Off
+
+// Direction Constants
 #define RIGHT 1                 // Rotate Right
 #define LEFT 2                  // Rotate Left
 #define FORWARD 1               // Move Forward
@@ -73,9 +77,32 @@ void setup()
 
 void loop()
 {
-  FOLLOW_LINE(BACK);
-  ROW_TRANSITION();
-  FOLLOW_LINE(FORWARD);
+  // FOLLOW_LINE(BACK);
+  // ROW_TRANSITION();
+  // FOLLOW_LINE(FORWARD);
+
+  track_line();
+  Serial.print("The current speed of the motor is ");
+  
+  if(cur_angle > 2)
+  {
+    DCM_ROTATE(60 + int(cur_angle), RIGHT);
+    Serial.println(60 + int(cur_angle));
+  }
+  
+  else if(cur_angle < -2)
+  {
+    DCM_ROTATE(60 - int(cur_angle), LEFT);
+    Serial.println(-60 + int(cur_angle));
+  }
+  
+  else
+  {
+    DCM_BRAKE();
+    Serial.println(0);
+  }
+  
+  Serial.println();
 }
 
 /**
@@ -237,7 +264,7 @@ void DCM_BRAKE()
  */
 void DCM_MOVE(int desired_speed, int dir)
 {
-  if(dir == FORWARD)
+  if(dir == BACK)
   {
     digitalWrite(M1_DIR_ONE, HIGH);
     digitalWrite(M1_DIR_TWO, LOW);
@@ -268,7 +295,7 @@ void DCM_MOVE(int desired_speed, int dir)
  */
 void DCM_ROTATE(int desired_speed, int dir)
 {
-  if(dir == LEFT)
+  if(dir == RIGHT)
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
@@ -292,11 +319,12 @@ void DCM_ROTATE(int desired_speed, int dir)
 
 /**
  * @brief Straightens robot to line
+ *        Assumes Robot is flush with line
  *
- * @param void
+ * @param dir the direction robot is moving in
  * @return void
  */
-void STRAIGHTEN()
+void STRAIGHTEN(int dir)
 {
   while(1)
   {
@@ -310,8 +338,41 @@ void STRAIGHTEN()
       Serial.print(" and cur_angle is ");
       Serial.print(cur_angle);
     }
+    
     else
     {
+      if(A < LOWER_CENTER || A > UPPER_CENTER)
+      {
+        if(A < LOWER_CENTER)
+        {
+          Serial.println("Currently Below");
+          if(dir == FORWARD)
+          {
+            DCM_ROTATE(100, LEFT);
+          }
+          else
+          {
+            DCM_ROTATE(100, RIGHT);
+          }
+        }
+        else // A > UPPER_CENTER
+        {
+          Serial.println("Currently Above");
+          if(dir == FORWARD)
+          {
+            DCM_ROTATE(100, RIGHT);
+          }
+          else
+          {
+            DCM_ROTATE(100, LEFT);
+          }
+        }
+        
+        delay(300);
+        DCM_MOVE(150,dir);
+        continue;
+      }
+      
       Serial.print("The current speed of rotation is ");
       if(cur_angle > 2)
       {
@@ -327,6 +388,7 @@ void STRAIGHTEN()
       
       else
       {
+        Serial.println(0);
         return;
       }
     }
@@ -398,8 +460,8 @@ void FOLLOW_LINE(int dir)
         return;
       }
     }
-    
-    STRAIGHTEN();
+
+    STRAIGHTEN(dir);
     
     if(dir == FORWARD)
     {
@@ -430,9 +492,10 @@ void ROW_TRANSITION()
     track_line();
     if(numPixels > NUM_PIXELS_NOT_NOISE)
     {
-      if(A > 15 && A < 75)
+      // The seven is an estimate
+      if(A > (LOWER_CENTER - 7) && A < (UPPER_CENTER + 7))
       {
-        STRAIGHTEN();
+        STRAIGHTEN(FORWARD);
         return;
       }
     }
