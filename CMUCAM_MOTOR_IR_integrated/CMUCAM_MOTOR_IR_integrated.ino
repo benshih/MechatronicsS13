@@ -16,6 +16,7 @@
 #include <linreg.h>
 #include <CMUcam4.h>
 #include <CMUcom4.h>
+#include <Servo.h> 
 
 // Camera Tracking Parameters
 #define RED_MIN 170
@@ -49,7 +50,7 @@
 #define OFF 0                   // Defines DC Motor Off
 
 // Direction Constants
-#define RIGHT 1                 // Rotate Right
+#define RIGHT 3                 // Rotate Right
 #define LEFT 2                  // Rotate Left
 #define FORWARD 1               // Move Forward
 #define BACK 2                  // Move Backward
@@ -68,40 +69,73 @@ double A,B;                     // A + Bx,slope and intercept of tracked line
 int IR0_EDGE = 0;               // Sensor Status with respect to the edge
 int IR1_EDGE = 0;
 
+// Dropper Constants
+#define drop_pos_L 2            // Dropper position detector left side INT0
+#define drop_pos_M A0           // Dropper position detector left side
+#define drop_pos_R 3            // Dropper position detector left side INT1
+#define D1_DIR_ONE 10           // Chain Motor Board L2
+#define D1_DIR_TWO 11           // Chain Motor Board L1
+#define D1_ENABLE 12            // Chain Motor Board Enable
+// #define OFF 0                // Defines Chain Motor Off
+// #define LEFT  2              // Dropper pos Left
+#define MID   1                 // Dropper pos Mid
+// #define RIGHT 3              // Dropper pos Right
+ 
+Servo servoL;  // create servo object to control servo left
+Servo servoR;  // create servo object to control servo Right
+int DPpos = MID;                 // Initial dropperchain pos is N/A 
+
 void setup()
 {
   Serial.begin(BAUD_RATE);
   CAMERA_INIT();
   DCM_INIT();
+  DPCHAIN_INIT();
 }
 
 void loop()
 {
-  track_line();
+//  track_line();
+//  
+//  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+//  {
+//    // FIND LINE FUNCTION SHOULD BE CALLED HERE
+//    DCM_BRAKE();
+//    Serial.print("numPixels is ");
+//    Serial.print(numPixels);
+//    Serial.print(" and cur_angle is ");
+//    Serial.print(cur_angle);
+//    Serial.println();
+//  }
+//  
+//  Serial.print("The current speed of rotation is ");
+//  if(cur_angle > 2)
+//  {
+//    DCM_ROTATE(60 + int(cur_angle), LEFT);
+//    Serial.println(60 + int(cur_angle));
+//  }
+//  
+//  else if(cur_angle < -2)
+//  {
+//    DCM_ROTATE(60 - int(cur_angle), RIGHT);
+//    Serial.println(-60 + int(cur_angle));
+//  }
   
-  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
-  {
-    // FIND LINE FUNCTION SHOULD BE CALLED HERE
-    DCM_BRAKE();
-    Serial.print("numPixels is ");
-    Serial.print(numPixels);
-    Serial.print(" and cur_angle is ");
-    Serial.print(cur_angle);
-    Serial.println();
-  }
-  
-  Serial.print("The current speed of rotation is ");
-  if(cur_angle > 2)
-  {
-    DCM_ROTATE(60 + int(cur_angle), LEFT);
-    Serial.println(60 + int(cur_angle));
-  }
-  
-  else if(cur_angle < -2)
-  {
-    DCM_ROTATE(60 - int(cur_angle), RIGHT);
-    Serial.println(-60 + int(cur_angle));
-  }
+  DP_pos(LEFT);
+  DP_drop();
+  delay (5000);
+  DP_pos(RIGHT);
+  DP_drop();
+  delay (5000);
+  DP_pos(LEFT);
+  DP_drop();
+  delay (5000);
+  DP_pos(MID);
+  DP_drop();
+  delay (5000);
+  DP_pos(RIGHT);
+  DP_drop();
+  delay (5000);
   
   // FOLLOW_LINE(BACK);
   // ROW_TRANSITION();
@@ -111,6 +145,36 @@ void loop()
   // delay(4000);
   // DCM_MOVE(255,BACK);
   // delay(4000);
+}
+
+/**
+ * @brief DC Motor Init
+ *
+ * @param void
+ * @return void
+ */
+void DPCHAIN_INIT()
+{
+  // Init for Chain Motor 
+  pinMode(D1_DIR_ONE, OUTPUT);   // init L2
+  pinMode(D1_DIR_TWO, OUTPUT);   // init L1
+  pinMode(D1_ENABLE, OUTPUT);    // init enable
+
+  analogWrite(D1_ENABLE,OFF);    // turn DC motor off
+  digitalWrite(D1_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(D1_DIR_TWO, LOW);
+  
+  // initialize interrupt for Dropchain lozolization position left and right
+  pinMode(drop_pos_L,INPUT);
+  pinMode(drop_pos_R,INPUT);  
+  attachInterrupt(0, posL , RISING);
+  attachInterrupt(1, posR , RISING);
+  
+  // initialize servo for the dropper 
+  servoR.attach(14);  // attaches the servo on pin 14 to the servoR
+  servoL.attach(15);  // attaches the servo on pin 15 to the servoL
+  servoL.write(70);   // initialize servo position to hold shingle
+  servoR.write(180); 
 }
 
 /**
@@ -508,4 +572,129 @@ void ROW_TRANSITION()
       }
     }
   }
+}
+
+/**
+ * @brief Stops DC Motors by braking
+ *
+ * @param void
+ * @return void
+ */
+void DPCHAIN_BRAKE()
+{
+  analogWrite(D1_ENABLE,OFF);      // turn DC motor off
+  digitalWrite(D1_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(D1_DIR_TWO, LOW);
+}
+
+/**
+ * @brief Makes DC Motors move dir at speed rpm
+ *
+ * @param desired_speed desired speed
+ * @param dir moving left or right
+ * @return void
+ */
+void DPCHAIN_MOVE(int desired_speed, int dir)
+{
+  if(dir == LEFT)
+  {
+    digitalWrite(D1_DIR_ONE, HIGH);
+    digitalWrite(D1_DIR_TWO, LOW);
+
+  }
+  if (dir == RIGHT)
+  {
+    digitalWrite(D1_DIR_ONE, LOW);
+    digitalWrite(D1_DIR_TWO, HIGH);
+  }  
+  analogWrite(D1_ENABLE, desired_speed);
+}
+//interupt:Right position arrived renew Dropper position = RIGHT  
+void posR ()
+{
+  DPpos= RIGHT;
+//  Serial.print("DPpos = RIGHT" );                       
+//  Serial.println(DPpos);
+}
+//interupt:Left position arrived renew Dropper position = LEFT 
+void posL ()
+{
+  DPpos = LEFT;
+//  Serial.print("DPpos = LEFT" );                       
+//  Serial.println(DPpos);
+}
+
+/**
+ * @brief Dropper actuator servo
+ *
+ * @param void
+ * @return void
+ */
+/**
+ * @brief Dropper actuator servo
+ *
+ * @param void
+ * @return void
+ */
+void DP_drop()
+{
+  servoL.write(180);
+  servoR.write(70);
+  delay(500);
+  servoL.write(70);
+  servoR.write(180);
+}
+
+/**
+ * @brief Dropperchain locolization
+ *
+ * @param int pos
+ * @return void
+ */
+void DP_pos(int pos)
+{
+  int dir = 4;
+  while (dir != OFF) 
+  {
+    // read the input on analog pin 0:
+    int sensorValueM = analogRead(A0);
+//    Serial.print("\t sensor M = " );                       
+//    Serial.println(sensorValueM);
+    if(sensorValueM < 20)
+    DPpos = MID;
+    if (pos==DPpos)//the actual pose DPpos reaches the goal pose pos
+    {
+      DPCHAIN_BRAKE();//stop the chain
+      dir=OFF;//stop chain
+    }
+    else
+    {
+      switch (pos)
+      {
+      case LEFT:
+        dir= LEFT;
+        break;
+
+      case MID:
+        {
+          if (DPpos == LEFT)
+            dir= RIGHT;
+          if (DPpos == RIGHT)
+            dir= LEFT;
+        }
+        break;
+
+      case RIGHT:
+        dir= RIGHT;
+        break;
+      }
+      DPCHAIN_MOVE(200,dir);  
+    } 
+  Serial.print(" DPpos = " );                       
+  Serial.print(DPpos);
+  Serial.print("\t pos = " );                       
+  Serial.println(pos);
+  Serial.print("\t dir = " );                       
+  Serial.println(dir);
+  }  
 }
