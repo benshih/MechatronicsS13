@@ -77,32 +77,40 @@ void setup()
 
 void loop()
 {
-  // FOLLOW_LINE(BACK);
-  // ROW_TRANSITION();
-  // FOLLOW_LINE(FORWARD);
-
   track_line();
-  Serial.print("The current speed of the motor is ");
   
+  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+  {
+    // FIND LINE FUNCTION SHOULD BE CALLED HERE
+    DCM_BRAKE();
+    Serial.print("numPixels is ");
+    Serial.print(numPixels);
+    Serial.print(" and cur_angle is ");
+    Serial.print(cur_angle);
+    Serial.println();
+  }
+  
+  Serial.print("The current speed of rotation is ");
   if(cur_angle > 2)
   {
-    DCM_ROTATE(60 + int(cur_angle), RIGHT);
+    DCM_ROTATE(60 + int(cur_angle), LEFT);
     Serial.println(60 + int(cur_angle));
   }
   
   else if(cur_angle < -2)
   {
-    DCM_ROTATE(60 - int(cur_angle), LEFT);
+    DCM_ROTATE(60 - int(cur_angle), RIGHT);
     Serial.println(-60 + int(cur_angle));
   }
   
-  else
-  {
-    DCM_BRAKE();
-    Serial.println(0);
-  }
-  
-  Serial.println();
+  // FOLLOW_LINE(BACK);
+  // ROW_TRANSITION();
+  // FOLLOW_LINE(FORWARD);
+
+  // DCM_MOVE(255,FORWARD);
+  // delay(4000);
+  // DCM_MOVE(255,BACK);
+  // delay(4000);
 }
 
 /**
