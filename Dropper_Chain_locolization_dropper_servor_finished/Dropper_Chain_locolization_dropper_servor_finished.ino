@@ -3,16 +3,17 @@
 #define drop_pos_L 2            // Dropper position detector left side INT0
 #define drop_pos_M A0           // Dropper position detector left side
 #define drop_pos_R 3            // Dropper position detector left side INT1
-#define D1_DIR_ONE 4            // Chain Motor Board L2
-#define D1_DIR_TWO 5            // Chain Motor Board L1
-#define D1_ENABLE 6             // Chain Motor Board Enable
+#define D1_DIR_ONE 10            // Chain Motor Board L2
+#define D1_DIR_TWO 11            // Chain Motor Board L1
+#define D1_ENABLE 12             // Chain Motor Board Enable
 #define OFF 0                   // Defines Chain Motor Off
 #define LEFT  2                 // Dropper pos Left
 #define MID   1                 // Dropper pos Mid
 #define RIGHT 3                 // Dropper pos Right
 #include <Servo.h> 
  
-Servo myservo;  // create servo object to control a servo 
+Servo servoL;  // create servo object to control servo left
+Servo servoR;  // create servo object to control servo Right
 int DPpos = MID;                 // Initial dropperchain pos is N/A 
 
 // the setup routine runs once when you press reset:
@@ -20,14 +21,17 @@ void setup()
 {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
-  myservo.attach(9);  // attaches the servo on pin 9 to the servo object
   // initialize Dropchain
   DPCHAIN_INIT();
   // initialize interrupt for Dropchain lozolization position left and right
   pinMode(drop_pos_L,INPUT);
   pinMode(drop_pos_R,INPUT);  
   attachInterrupt(0, posL , RISING);
-  attachInterrupt(1, posR , RISING);  
+  attachInterrupt(1, posR , RISING);
+  servoR.attach(14);  // attaches the servo on pin 14 to the servoR
+  servoL.attach(15);  // attaches the servo on pin 15 to the servoL
+  servoL.write(70);
+  servoR.write(180); 
 } 
 
 void loop() 
@@ -126,11 +130,19 @@ void posL ()
  * @param void
  * @return void
  */
+/**
+ * @brief Dropper actuator servo
+ *
+ * @param void
+ * @return void
+ */
 void DP_drop()
 {
-  myservo.write(90);
-  delay(1000);
-  myservo.write(0);
+  servoL.write(180);
+  servoR.write(70);
+  delay(500);
+  servoL.write(70);
+  servoR.write(180);
 }
 
 /**
@@ -154,11 +166,6 @@ void DP_pos(int pos)
     {
       DPCHAIN_BRAKE();//stop the chain
       dir=OFF;//stop chain
-      myservo.write(0);//
-      delay(1000);
-      myservo.write(90);
-      delay(1000);
-      myservo.write(0);
     }
     else
     {
@@ -181,7 +188,7 @@ void DP_pos(int pos)
         dir= RIGHT;
         break;
       }
-      DPCHAIN_MOVE(100,dir);  
+      DPCHAIN_MOVE(200,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);
