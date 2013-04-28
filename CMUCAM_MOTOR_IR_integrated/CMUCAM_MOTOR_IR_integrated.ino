@@ -71,8 +71,8 @@ int IR1_EDGE = 0;
 
 // Dropper Constants
 #define drop_pos_L 2            // Dropper position detector left side INT0
-#define drop_pos_M A0           // Dropper position detector left side
-#define drop_pos_R 3            // Dropper position detector left side INT1
+#define drop_pos_M A2           // Dropper position detector mid side A2
+#define drop_pos_R 3            // Dropper position detector right side INT1
 #define D1_DIR_ONE 10           // Chain Motor Board L2
 #define D1_DIR_TWO 11           // Chain Motor Board L1
 #define D1_ENABLE 12            // Chain Motor Board Enable
@@ -656,8 +656,8 @@ void DP_pos(int pos)
   int dir = 4;
   while (dir != OFF) 
   {
-    // read the input on analog pin 0:
-    int sensorValueM = analogRead(A0);
+    // read the input on analog pin 3:
+    int sensorValueM = analogRead(drop_pos_M);
 //    Serial.print("\t sensor M = " );                       
 //    Serial.println(sensorValueM);
     if(sensorValueM < 20)

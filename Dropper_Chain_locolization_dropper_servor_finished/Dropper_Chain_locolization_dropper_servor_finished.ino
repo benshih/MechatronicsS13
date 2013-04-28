@@ -139,10 +139,10 @@ void posL ()
 void DP_drop()
 {
   servoL.write(180);
-  servoR.write(70);
-  delay(500);
+  servoR.write(60);
+  delay(800);
   servoL.write(70);
-  servoR.write(180);
+  servoR.write(170);
 }
 
 /**
@@ -188,7 +188,7 @@ void DP_pos(int pos)
         dir= RIGHT;
         break;
       }
-      DPCHAIN_MOVE(200,dir);  
+      DPCHAIN_MOVE(150,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);
