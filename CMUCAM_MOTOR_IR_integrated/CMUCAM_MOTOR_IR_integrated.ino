@@ -19,12 +19,12 @@
 #include <Servo.h> 
 
 // Camera Tracking Parameters
-#define RED_MIN 170
-#define RED_MAX 225
-#define GREEN_MIN 140
-#define GREEN_MAX 195
-#define BLUE_MIN 105
-#define BLUE_MAX 180
+#define RED_MIN 150
+#define RED_MAX 190
+#define GREEN_MIN 142
+#define GREEN_MAX 167
+#define BLUE_MIN 108
+#define BLUE_MAX 145
 #define NUM_PIXELS_NOT_NOISE 25
 #define NO_IMAGE_FOUND 181
 #define LOWER_CENTER 28         // Limits of A in A + Bx
@@ -88,63 +88,72 @@ int DPpos = MID;                 // Initial dropperchain pos is N/A
 void setup()
 {
   Serial.begin(BAUD_RATE);
+  
+  Serial.println("Waiting for input");
+  while(!Serial.available()){}
+  Serial.println("Starting Now");
+  
   CAMERA_INIT();
   DCM_INIT();
-  DPCHAIN_INIT();
+  // DPCHAIN_INIT();
 }
 
 void loop()
 {
-//  track_line();
-//  
-//  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
-//  {
-//    // FIND LINE FUNCTION SHOULD BE CALLED HERE
-//    DCM_BRAKE();
-//    Serial.print("numPixels is ");
-//    Serial.print(numPixels);
-//    Serial.print(" and cur_angle is ");
-//    Serial.print(cur_angle);
-//    Serial.println();
-//  }
-//  
-//  Serial.print("The current speed of rotation is ");
-//  if(cur_angle > 2)
-//  {
-//    DCM_ROTATE(60 + int(cur_angle), LEFT);
-//    Serial.println(60 + int(cur_angle));
-//  }
-//  
-//  else if(cur_angle < -2)
-//  {
-//    DCM_ROTATE(60 - int(cur_angle), RIGHT);
-//    Serial.println(-60 + int(cur_angle));
-//  }
+  track_line();
   
-  DP_pos(LEFT);
-  DP_drop();
-  delay (5000);
-  DP_pos(RIGHT);
-  DP_drop();
-  delay (5000);
-  DP_pos(LEFT);
-  DP_drop();
-  delay (5000);
-  DP_pos(MID);
-  DP_drop();
-  delay (5000);
-  DP_pos(RIGHT);
-  DP_drop();
-  delay (5000);
+  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+  {
+    // FIND LINE FUNCTION SHOULD BE CALLED HERE
+    DCM_BRAKE();
+    Serial.print("numPixels is ");
+    Serial.print(numPixels);
+    Serial.print(" and cur_angle is ");
+    Serial.print(cur_angle);
+    Serial.println();
+  }
   
-  // FOLLOW_LINE(BACK);
-  // ROW_TRANSITION();
-  // FOLLOW_LINE(FORWARD);
+  Serial.print("The current speed of rotation is ");
+  if(cur_angle > 2)
+  {
+    DCM_ROTATE(60 + int(cur_angle), LEFT);
+    Serial.println(60 + int(cur_angle));
+  }
+  
+  else if(cur_angle < -2)
+  {
+    DCM_ROTATE(60 - int(cur_angle), RIGHT);
+    Serial.println(-60 + int(cur_angle));
+  }
+  
+  else
+  {
+    DCM_BRAKE();
+  }
+//  DP_pos(LEFT);
+//  DP_drop();
+//  delay (5000);
+//  DP_pos(RIGHT);
+//  DP_drop();
+//  delay (5000);
+//  DP_pos(LEFT);
+//  DP_drop();
+//  delay (5000);
+//  DP_pos(MID);
+//  DP_drop();
+//  delay (5000);
+//  DP_pos(RIGHT);
+//  DP_drop();
+//  delay (5000);
+  
+// FOLLOW_LINE(BACK);
+// ROW_TRANSITION();
+// FOLLOW_LINE(FORWARD);
 
-  // DCM_MOVE(255,FORWARD);
-  // delay(4000);
-  // DCM_MOVE(255,BACK);
-  // delay(4000);
+//   DCM_MOVE(255,FORWARD);
+//   delay(4000);
+//   DCM_MOVE(255,BACK);
+//   delay(4000);
 }
 
 /**
@@ -187,11 +196,11 @@ void CAMERA_INIT()
 {
   error = cam.begin();
 
-  if(error < CMUCAM4_RETURN_SUCCESS)
+  while(error < CMUCAM4_RETURN_SUCCESS)
   {
     Serial.print("CMUCam Fail with error ");
     Serial.println(error);
-    while(1) {}
+    error = cam.begin();
   }
 
   // Wait for auto gain and auto white balance to run.
