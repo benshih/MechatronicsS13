@@ -54,6 +54,8 @@
 #define LEFT 2                  // Rotate Left
 #define FORWARD 1               // Move Forward
 #define BACK 2                  // Move Backward
+#define Edge_L A0               // Edge senxor left
+#define Edge_L A1               // Edge senxor right
 
 CMUcam4 cam(CMUCOM4_SERIAL1);   // Serial Port CMUCam is attached to
 int error;                      // CMUCAM error detection on startup
@@ -66,7 +68,7 @@ double A,B;                     // A + Bx,slope and intercept of tracked line
 // Edge Detection Constants
 #define IR_edge0air 450         // Threshold for detection of edge with IR sensor
 #define IR_edge1air 450
-int IR0_EDGE = 0;               // Sensor Status with respect to the edge
+int IR0_EDGE = 0;               // Sensor Status with respect to the edge (0:on roof;1 off roof)
 int IR1_EDGE = 0;
 
 // Dropper Constants
@@ -93,58 +95,58 @@ void setup()
   while(!Serial.available()){}
   Serial.println("Starting Now");
   
-  CAMERA_INIT();
+  // CAMERA_INIT();
   DCM_INIT();
-  // DPCHAIN_INIT();
+  DPCHAIN_INIT();
 }
 
 void loop()
 {
-  track_line();
-  
-  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
-  {
-    // FIND LINE FUNCTION SHOULD BE CALLED HERE
-    DCM_BRAKE();
-    Serial.print("numPixels is ");
-    Serial.print(numPixels);
-    Serial.print(" and cur_angle is ");
-    Serial.print(cur_angle);
-    Serial.println();
-  }
-  
-  Serial.print("The current speed of rotation is ");
-  if(cur_angle > 2)
-  {
-    DCM_ROTATE(60 + int(cur_angle), LEFT);
-    Serial.println(60 + int(cur_angle));
-  }
-  
-  else if(cur_angle < -2)
-  {
-    DCM_ROTATE(60 - int(cur_angle), RIGHT);
-    Serial.println(-60 + int(cur_angle));
-  }
-  
-  else
-  {
-    DCM_BRAKE();
-  }
-//  DP_pos(LEFT);
-//  DP_drop();
-//  delay (5000);
-//  DP_pos(RIGHT);
-//  DP_drop();
-//  delay (5000);
-//  DP_pos(LEFT);
-//  DP_drop();
-//  delay (5000);
-//  DP_pos(MID);
-//  DP_drop();
-//  delay (5000);
-//  DP_pos(RIGHT);
-//  DP_drop();
-//  delay (5000);
+//  track_line();
+//  
+//  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
+//  {
+//    // FIND LINE FUNCTION SHOULD BE CALLED HERE
+//    DCM_BRAKE();
+//    Serial.print("numPixels is ");
+//    Serial.print(numPixels);
+//    Serial.print(" and cur_angle is ");
+//    Serial.print(cur_angle);
+//    Serial.println();
+//  }
+//  
+//  Serial.print("The current speed of rotation is ");
+//  if(cur_angle > 2)
+//  {
+//    DCM_ROTATE(60 + int(cur_angle), LEFT);
+//    Serial.println(60 + int(cur_angle));
+//  }
+//  
+//  else if(cur_angle < -2)
+//  {
+//    DCM_ROTATE(60 - int(cur_angle), RIGHT);
+//    Serial.println(-60 + int(cur_angle));
+//  }
+//  
+//  else
+//  {
+//    DCM_BRAKE();
+//  }
+  DP_pos(LEFT);
+  DP_drop();
+  delay (5000);
+  DP_pos(RIGHT);
+  DP_drop();
+  delay (5000);
+  DP_pos(LEFT);
+  DP_drop();
+  delay (5000);
+  DP_pos(MID);
+  DP_drop();
+  delay (5000);
+  DP_pos(RIGHT);
+  DP_drop();
+  delay (5000);
   
 // FOLLOW_LINE(BACK);
 // ROW_TRANSITION();
@@ -697,7 +699,7 @@ void DP_pos(int pos)
         dir= RIGHT;
         break;
       }
-      DPCHAIN_MOVE(200,dir);  
+      DPCHAIN_MOVE(125,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);

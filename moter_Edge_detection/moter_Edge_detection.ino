@@ -20,8 +20,8 @@
 
 //Edge Dection
 
-#define IR_edge0air 500
-#define IR_edge1air 500
+#define IR_edge0air 450
+#define IR_edge1air 450
 
 // Noise Parameter
 #define NOISE_FILTER 6
@@ -55,8 +55,8 @@ int state;
 3:moving backward
 */
 
-int sensorval0[10] = {770,770,770,770,770,770,770,770,770,770};
-int sensorval1[10] = {770,770,770,770,770,770,770,770,770,770};
+int sensorval0 = 700;
+int sensorval1 = 700;
 int cur_idx = 0;
 
 int current_dir=0;
@@ -113,19 +113,16 @@ void loop()
     case 2:
       //switching line
       Serial.println("switching");
-      for(int i = 0; i < 10; i++)
-      {
-        sensorval0[i] = 770;
-        sensorval1[i] = 770;
-      }
+        sensorval0 = 770;
+        sensorval1 = 770;
       DCM_MOVE(255,FORWARD);
       delay(800);
       DCM_ROTATE(255,RIGHT);
-      delay(2000);
+      delay(1000);
       DCM_MOVE(255,FORWARD);
-      delay(5000);
+      delay(3000);
       DCM_ROTATE(255,LEFT);
-      delay(2000);
+      delay(1000);
       current_dir = 1;
       break;
      case 3:
@@ -332,7 +329,7 @@ void DCM_MOVE(int desired_speed, int dir)
  */
 void DCM_ROTATE(int desired_speed, int dir)
 {
-  if(dir == LEFT)
+  if(dir == RIGHT)
   {
     digitalWrite(M1_DIR_ONE, LOW);
     digitalWrite(M1_DIR_TWO, HIGH);
@@ -367,19 +364,6 @@ int EDGE_DET()
   int sensorValue0 = analogRead(A0);
   // read the input on analog pin 1:
   int sensorValue1 = analogRead(A1);
-  
-  sensorval0[cur_idx] = sensorValue0;
-  sensorval1[cur_idx] = sensorValue1;
-  cur_idx = (cur_idx + 1) % 10;
-  
-  sensorValue0 = sensorval0[0] + sensorval0[1] + sensorval0[2] + sensorval0[3] + sensorval0[4];
-  sensorValue0 = sensorValue0 + sensorval0[5] + sensorval0[6] + sensorval0[7] + sensorval0[8] + sensorval0[9];
-  sensorValue0 = sensorValue0 / 10;
-  
-  sensorValue1 = sensorval1[0] + sensorval1[1] + sensorval1[2] + sensorval1[3] + sensorval1[4];
-  sensorValue1 = sensorValue1 + sensorval1[5] + sensorval1[6] + sensorval1[7] + sensorval1[8] + sensorval1[9];
-  sensorValue1 = sensorValue1 / 10;
-  
   // print out the value you read:
   Serial.print("sensor 0 = " );                       
   Serial.print(sensorValue0);      

@@ -1,7 +1,7 @@
 
 // DC Motor Constants
 #define drop_pos_L 2            // Dropper position detector left side INT0
-#define drop_pos_M A0           // Dropper position detector left side
+#define drop_pos_M A2           // Dropper position detector left side A2
 #define drop_pos_R 3            // Dropper position detector left side INT1
 #define D1_DIR_ONE 10            // Chain Motor Board L2
 #define D1_DIR_TWO 11            // Chain Motor Board L1
@@ -157,7 +157,7 @@ void DP_pos(int pos)
   while (dir != OFF) 
   {
     // read the input on analog pin 0:
-    int sensorValueM = analogRead(A0);
+    int sensorValueM = analogRead(drop_pos_M);
 //    Serial.print("\t sensor M = " );                       
 //    Serial.println(sensorValueM);
     if(sensorValueM < 20)
