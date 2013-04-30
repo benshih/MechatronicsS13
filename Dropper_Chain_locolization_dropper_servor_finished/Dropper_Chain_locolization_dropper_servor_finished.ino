@@ -160,7 +160,7 @@ void DP_pos(int pos)
     int sensorValueM = analogRead(drop_pos_M);
 //    Serial.print("\t sensor M = " );                       
 //    Serial.println(sensorValueM);
-    if(sensorValueM < 20)
+    if(sensorValueM < 60)
     DPpos = MID;
     if (pos==DPpos)//the actual pose DPpos reaches the goal pose pos
     {

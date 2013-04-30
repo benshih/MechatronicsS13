@@ -19,12 +19,12 @@
 #include <Servo.h> 
 
 // Camera Tracking Parameters
-#define RED_MIN 150
-#define RED_MAX 190
-#define GREEN_MIN 142
-#define GREEN_MAX 167
-#define BLUE_MIN 108
-#define BLUE_MAX 145
+#define RED_MIN 145
+#define RED_MAX 195
+#define GREEN_MIN 140
+#define GREEN_MAX 170
+#define BLUE_MIN 105
+#define BLUE_MAX 150
 #define NUM_PIXELS_NOT_NOISE 25
 #define NO_IMAGE_FOUND 181
 #define LOWER_CENTER 28         // Limits of A in A + Bx
@@ -66,8 +66,8 @@ double A,B;                     // A + Bx,slope and intercept of tracked line
                                 // insignificant if numPixels is 0
 
 // Edge Detection Constants
-#define IR_edge0air 450         // Threshold for detection of edge with IR sensor
-#define IR_edge1air 450
+#define IR_edge0air 400         // Threshold for detection of edge with IR sensor
+#define IR_edge1air 400
 int IR0_EDGE = 0;               // Sensor Status with respect to the edge (0:on roof;1 off roof)
 int IR1_EDGE = 0;
 
@@ -82,80 +82,90 @@ int IR1_EDGE = 0;
 // #define LEFT  2              // Dropper pos Left
 #define MID   1                 // Dropper pos Mid
 // #define RIGHT 3              // Dropper pos Right
+
+// Feeder Constants
+#define FD_DIR_ONE 38
+#define FD_DIR_TWO 39
+#define FD_ENABLE 40
  
 Servo servoL;  // create servo object to control servo left
 Servo servoR;  // create servo object to control servo Right
-int DPpos = MID;                 // Initial dropperchain pos is N/A 
+int DPpos = RIGHT;                 // Initial dropperchain pos is N/A 
 
 void setup()
 {
   Serial.begin(BAUD_RATE);
+  // CAMERA_INIT();
+  DCM_INIT();
+  DPCHAIN_INIT();
   
   Serial.println("Waiting for input");
   while(!Serial.available()){}
   Serial.println("Starting Now");
   
-  // CAMERA_INIT();
-  DCM_INIT();
-  DPCHAIN_INIT();
+  DP_pos(MID);
+  DCM_MOVE(255,FORWARD);
+  while(IR1_EDGE != 1)
+  {
+    EDGE_DET();
+  }
+  DCM_BRAKE();
+  DCM_MOVE(255,BACK);
+  while(IR0_EDGE != 1)
+  {
+    EDGE_DET();
+  }
+  DCM_BRAKE();  
+  while(1){};
 }
 
 void loop()
 {
-//  track_line();
-//  
-//  if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
-//  {
-//    // FIND LINE FUNCTION SHOULD BE CALLED HERE
-//    DCM_BRAKE();
-//    Serial.print("numPixels is ");
-//    Serial.print(numPixels);
-//    Serial.print(" and cur_angle is ");
-//    Serial.print(cur_angle);
-//    Serial.println();
-//  }
-//  
-//  Serial.print("The current speed of rotation is ");
-//  if(cur_angle > 2)
-//  {
-//    DCM_ROTATE(60 + int(cur_angle), LEFT);
-//    Serial.println(60 + int(cur_angle));
-//  }
-//  
-//  else if(cur_angle < -2)
-//  {
-//    DCM_ROTATE(60 - int(cur_angle), RIGHT);
-//    Serial.println(-60 + int(cur_angle));
-//  }
-//  
-//  else
-//  {
-//    DCM_BRAKE();
-//  }
-  DP_pos(LEFT);
-  DP_drop();
-  delay (5000);
-  DP_pos(RIGHT);
-  DP_drop();
-  delay (5000);
-  DP_pos(LEFT);
-  DP_drop();
-  delay (5000);
-  DP_pos(MID);
-  DP_drop();
-  delay (5000);
-  DP_pos(RIGHT);
-  DP_drop();
-  delay (5000);
-  
-// FOLLOW_LINE(BACK);
-// ROW_TRANSITION();
-// FOLLOW_LINE(FORWARD);
+  // Feeder spits shingle
 
-//   DCM_MOVE(255,FORWARD);
-//   delay(4000);
-//   DCM_MOVE(255,BACK);
-//   delay(4000);
+  // Floor Version
+  DP_drop();
+  DCM_MOVE(255,FORWARD);
+  delay(3800);
+  DCM_BRAKE();
+  delay(5000);  // Feeder spits shingle
+  DP_drop();
+  DCM_MOVE(255,FORWARD);
+  delay(3800);
+  DCM_BRAKE();
+  delay(5000);  // Feeder spits shingle
+  DP_drop();
+  
+  DCM_MOVE(255,BACK);
+  delay(800);
+  DCM_ROTATE(255,RIGHT);
+  delay(1200);
+  DCM_MOVE(255,BACK);
+  delay(3300);
+  DCM_ROTATE(255,LEFT);
+  delay(1100);
+  DCM_MOVE(255,FORWARD);
+  while(IR1_EDGE != 1)
+  {
+    EDGE_DET();
+  }
+  DCM_BRAKE();
+  DP_pos(RIGHT);
+  DP_drop();
+  
+  DCM_MOVE(255,BACK);
+  delay(3800);
+  DCM_BRAKE();
+  DP_drop();
+  
+  DCM_MOVE(255,BACK);
+  delay(3800);
+  DCM_BRAKE();
+  DP_drop();
+  
+  DP_pos(LEFT);
+  DP_drop();
+  while(1){};
 }
 
 /**
@@ -185,7 +195,15 @@ void DPCHAIN_INIT()
   servoR.attach(14);  // attaches the servo on pin 14 to the servoR
   servoL.attach(15);  // attaches the servo on pin 15 to the servoL
   servoL.write(70);   // initialize servo position to hold shingle
-  servoR.write(180); 
+  servoR.write(180);
+  
+  pinMode(FD_DIR_ONE, OUTPUT);   // init L2
+  pinMode(FD_DIR_TWO, OUTPUT);   // init L1
+  pinMode(FD_ENABLE, OUTPUT);    // init enable
+
+  digitalWrite(FD_ENABLE,LOW);    // turn DC motor off
+  digitalWrite(FD_DIR_ONE, LOW); // Both Direction pins low means the motor has braked
+  digitalWrite(FD_DIR_TWO, HIGH);
 }
 
 /**
@@ -414,48 +432,15 @@ void STRAIGHTEN(int dir)
     track_line();
     if(cur_angle == NO_IMAGE_FOUND || numPixels < NUM_PIXELS_NOT_NOISE)
     {
-      // FIND LINE FUNCTION SHOULD BE CALLED HERE
       DCM_BRAKE();
       Serial.print("numPixels is ");
       Serial.print(numPixels);
       Serial.print(" and cur_angle is ");
-      Serial.print(cur_angle);
+      Serial.println(cur_angle);
     }
     
     else
-    {
-      if(A < LOWER_CENTER || A > UPPER_CENTER)
-      {
-        if(A < LOWER_CENTER)
-        {
-          Serial.println("Currently Below");
-          if(dir == FORWARD)
-          {
-            DCM_ROTATE(100, LEFT);
-          }
-          else
-          {
-            DCM_ROTATE(100, RIGHT);
-          }
-        }
-        else // A > UPPER_CENTER
-        {
-          Serial.println("Currently Above");
-          if(dir == FORWARD)
-          {
-            DCM_ROTATE(100, RIGHT);
-          }
-          else
-          {
-            DCM_ROTATE(100, LEFT);
-          }
-        }
-        
-        delay(300);
-        DCM_MOVE(150,dir);
-        continue;
-      }
-      
+    { 
       Serial.print("The current speed of rotation is ");
       if(cur_angle > 2)
       {
@@ -611,7 +596,6 @@ void DPCHAIN_MOVE(int desired_speed, int dir)
   {
     digitalWrite(D1_DIR_ONE, HIGH);
     digitalWrite(D1_DIR_TWO, LOW);
-
   }
   if (dir == RIGHT)
   {
@@ -649,11 +633,12 @@ void posL ()
  */
 void DP_drop()
 {
+  FEED();
   servoL.write(180);
-  servoR.write(70);
+  servoR.write(60);
   delay(500);
   servoL.write(70);
-  servoR.write(180);
+  servoR.write(170);
 }
 
 /**
@@ -671,7 +656,7 @@ void DP_pos(int pos)
     int sensorValueM = analogRead(drop_pos_M);
 //    Serial.print("\t sensor M = " );                       
 //    Serial.println(sensorValueM);
-    if(sensorValueM < 20)
+    if(sensorValueM < 60)
     DPpos = MID;
     if (pos==DPpos)//the actual pose DPpos reaches the goal pose pos
     {
@@ -685,19 +670,19 @@ void DP_pos(int pos)
       case LEFT:
         dir= LEFT;
         break;
-
-      case MID:
-        {
-          if (DPpos == LEFT)
-            dir= RIGHT;
-          if (DPpos == RIGHT)
-            dir= LEFT;
-        }
-        break;
-
-      case RIGHT:
-        dir= RIGHT;
-        break;
+ 
+       case MID:
+         {
+           if (DPpos == LEFT)
+             dir= RIGHT;
+           if (DPpos == RIGHT)
+             dir= LEFT;
+         }
+         break;
+ 
+       case RIGHT:
+         dir= RIGHT;
+         break;
       }
       DPCHAIN_MOVE(125,dir);  
     } 
@@ -709,3 +694,12 @@ void DP_pos(int pos)
   Serial.println(dir);
   }  
 }
+
+void FEED()
+{
+  digitalWrite(FD_ENABLE,HIGH);
+  delay(2000);
+  digitalWrite(FD_ENABLE,LOW);
+  delay(500);
+}
+   
