@@ -14,7 +14,7 @@
  
 Servo servoL;  // create servo object to control servo left
 Servo servoR;  // create servo object to control servo Right
-int DPpos = MID;                 // Initial dropperchain pos is N/A 
+int DPpos = LEFT;                 // Initial dropperchain pos is N/A 
 
 // the setup routine runs once when you press reset:
 void setup()
@@ -36,21 +36,17 @@ void setup()
 
 void loop() 
 {  
-  DP_pos(LEFT);
-  DP_drop();
-  delay (5000);
-  DP_pos(RIGHT);
-  DP_drop();
-  delay (5000);
+  DP_pos(MID);
+  delay (10000);
   DP_pos(LEFT);
   DP_drop();
   delay (5000);
   DP_pos(MID);
-  DP_drop();
-  delay (5000);
+  delay (10000);
   DP_pos(RIGHT);
   DP_drop();
   delay (5000);
+  while(1);
 } 
 
 
