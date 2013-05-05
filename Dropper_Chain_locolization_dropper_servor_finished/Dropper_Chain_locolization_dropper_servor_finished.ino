@@ -22,6 +22,11 @@ void setup()
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
   // initialize Dropchain
+  
+   Serial.println("Waiting for input");
+  while(!Serial.available()){}
+  Serial.println("Starting Now");
+  
   DPCHAIN_INIT();
   // initialize interrupt for Dropchain lozolization position left and right
   pinMode(drop_pos_L,INPUT);
@@ -184,7 +189,7 @@ void DP_pos(int pos)
         dir= RIGHT;
         break;
       }
-      DPCHAIN_MOVE(150,dir);  
+      DPCHAIN_MOVE(100,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);

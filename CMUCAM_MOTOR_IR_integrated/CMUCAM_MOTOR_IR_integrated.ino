@@ -104,19 +104,12 @@ void setup()
   Serial.println("Starting Now");
   
   DP_pos(MID);
-  DCM_MOVE(255,FORWARD);
-  while(IR1_EDGE != 1)
-  {
-    EDGE_DET();
-  }
-  DCM_BRAKE();
   DCM_MOVE(255,BACK);
   while(IR0_EDGE != 1)
   {
     EDGE_DET();
   }
-  DCM_BRAKE();  
-  while(1){};
+  DCM_BRAKE();
 }
 
 void loop()
@@ -125,11 +118,12 @@ void loop()
 
   // Floor Version
   DP_drop();
-  DCM_MOVE(255,FORWARD);
+  DCM_MOVE(200,FORWARD);
   delay(3800);
   DCM_BRAKE();
   delay(5000);  // Feeder spits shingle
   DP_drop();
+  while(1){};
   DCM_MOVE(255,FORWARD);
   delay(3800);
   DCM_BRAKE();
@@ -365,6 +359,7 @@ void DCM_BRAKE()
  */
 void DCM_MOVE(int desired_speed, int dir)
 {
+  int i;
   if(dir == BACK)
   {
     digitalWrite(M1_DIR_ONE, HIGH);
@@ -383,8 +378,12 @@ void DCM_MOVE(int desired_speed, int dir)
     digitalWrite(M2_DIR_TWO, HIGH);
   }
   
-  analogWrite(M1_ENABLE, desired_speed);
-  analogWrite(M2_ENABLE, desired_speed);
+  for(i = 60; i < 250; i+=10)
+  {
+    analogWrite(M1_ENABLE, i);
+    analogWrite(M2_ENABLE, i);
+    delay(50);
+  }
 }
 
 /**
@@ -684,7 +683,7 @@ void DP_pos(int pos)
          dir= RIGHT;
          break;
       }
-      DPCHAIN_MOVE(125,dir);  
+      DPCHAIN_MOVE(100,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);
