@@ -110,6 +110,7 @@ void setup()
     EDGE_DET();
   }
   DCM_BRAKE();
+  delay(2000);
 }
 
 void loop()
@@ -117,47 +118,80 @@ void loop()
   // Feeder spits shingle
 
   // Floor Version
+  FEED();
+  delay(2000);
   DP_drop();
-  DCM_MOVE(200,FORWARD);
+  delay(1000);
+  
+  DCM_MOVE(250,FORWARD);
   delay(3800);
   DCM_BRAKE();
-  delay(5000);  // Feeder spits shingle
+  FEED();
+  delay(2000);
   DP_drop();
-  while(1){};
-  DCM_MOVE(255,FORWARD);
+  delay(1000);
+  DCM_MOVE(250,FORWARD);
   delay(3800);
   DCM_BRAKE();
-  delay(5000);  // Feeder spits shingle
+  FEED();
+  delay(2000);
   DP_drop();
+  delay(1000);
   
   DCM_MOVE(255,BACK);
   delay(800);
-  DCM_ROTATE(255,RIGHT);
+  DCM_ROTATE(200,RIGHT);
   delay(1200);
   DCM_MOVE(255,BACK);
   delay(3300);
-  DCM_ROTATE(255,LEFT);
-  delay(1100);
+  DCM_ROTATE(200,LEFT);
+  delay(1000);
   DCM_MOVE(255,FORWARD);
   while(IR1_EDGE != 1)
   {
     EDGE_DET();
   }
-  DCM_BRAKE();
+  DCM_BRAKE();       //1st row2
+  FEED();
+  delay(2000);
   DP_pos(RIGHT);
   DP_drop();
+  delay(1000);
+  DP_pos(MID);
   
-  DCM_MOVE(255,BACK);
+//  DCM_ROTATE(150,RIGHT);
+//  delay(300);
+  
+  DCM_MOVE(250,BACK);//2rd row2
+  delay(1900);
+  DCM_BRAKE();
+  FEED();
+  delay(2000);
+  DP_drop();
+  delay(1000);
+  
+  DCM_MOVE(250,BACK);//3rd row2
   delay(3800);
   DCM_BRAKE();
+  FEED();
+  delay(2000);
   DP_drop();
+  delay(1000);
   
-  DCM_MOVE(255,BACK);
-  delay(3800);
+  DCM_MOVE(225,BACK);//4rd row2
+   while(IR0_EDGE != 1)
+  {
+    EDGE_DET();
+  }
   DCM_BRAKE();
-  DP_drop();
-  
+  FEED();
+  delay(2000);
   DP_pos(LEFT);
+  DP_drop();
+  DP_pos(MID);
+  
+  FEED();
+  delay(2000);
   DP_drop();
   while(1){};
 }
@@ -377,13 +411,18 @@ void DCM_MOVE(int desired_speed, int dir)
     digitalWrite(M2_DIR_ONE, LOW);
     digitalWrite(M2_DIR_TWO, HIGH);
   }
-  
-  for(i = 60; i < 250; i+=10)
-  {
-    analogWrite(M1_ENABLE, i);
-    analogWrite(M2_ENABLE, i);
-    delay(50);
-  }
+    analogWrite(M1_ENABLE, desired_speed);
+//    delay(5000);
+    analogWrite(M2_ENABLE, desired_speed);
+    
+    
+    
+//  for(i = 60; i < 250; i+=10) // slowly speed up
+//  {
+//    analogWrite(M1_ENABLE, i);
+//    analogWrite(M2_ENABLE, i);
+//    delay(50);
+//  }
 }
 
 /**
@@ -632,10 +671,9 @@ void posL ()
  */
 void DP_drop()
 {
-  FEED();
   servoL.write(180);
   servoR.write(60);
-  delay(500);
+  delay(1000);
   servoL.write(70);
   servoR.write(170);
 }
@@ -683,7 +721,7 @@ void DP_pos(int pos)
          dir= RIGHT;
          break;
       }
-      DPCHAIN_MOVE(100,dir);  
+      DPCHAIN_MOVE(125,dir);  
     } 
   Serial.print(" DPpos = " );                       
   Serial.print(DPpos);
