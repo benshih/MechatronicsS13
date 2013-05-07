@@ -116,7 +116,7 @@ void setup()
 void loop()
 {
   // Feeder spits shingle
-
+  delay(2000);
   // Floor Version
   FEED();
   delay(2000);
